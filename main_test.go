@@ -5,7 +5,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/dlampsi/adc"
+	"github.com/appliedres/adc"
 )
 
 func TestMe(t *testing.T) {
