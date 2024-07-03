@@ -25,4 +25,7 @@ const (
 	AC_PASSWORD_EXPIRED               = 0x800000   // 8388608	(Windows 2000/Windows Server 2003) The user’s password has expired.
 	AC_TRUSTED_TO_AUTH_FOR_DELEGATION = 0x1000000  // 16777216	(Windows 2000/Windows Server 2003) The account is enabled for delegation. It’s a security-sensitive setting
 	AC_PARTIAL_SECRETS_ACCOUNT        = 0x04000000 // 67108864	(Windows Server 2008/Windows Server 2008 R2) The account is a read-only domain controller (RODC). It’s a security-sensitive setting.
+	AC_INSTANCE_TYPE_WRITEABLE        = 0x00000004 // The object is writable on this directory.
+	ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP = 0x00000004 // Specifies a group that can contain accounts from any domain, other domain local groups from the same domain, global groups from any domain, and universal groups.
+	ADS_GROUP_TYPE_SECURITY_ENABLED   = 0x80000000 // Specifies a group that is security enabled. This group can be used to apply an access-control list on an ADSI object or a file system.
 )

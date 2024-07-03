@@ -8,7 +8,7 @@ import (
 	"github.com/appliedres/cloudy"
 	"github.com/appliedres/cloudy/models"
 
-	"github.com/dlampsi/adc"
+	"github.com/appliedres/adc"
 )
 
 type PageRequest struct {
