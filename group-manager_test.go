@@ -10,13 +10,14 @@ import (
 
 func initGroupManager() *AdGroupManager {
 	cfg := &AdGroupManager{
-		address:     "ldaps://localhost:636",
-		user:        "DEV-AD\\Administrator",
-		pwd:         "admin123!",
-		base:        "DC=ldap,DC=schneide,DC=dev",
-		insecureTLS: false,
+		address:     "ldap://10.1.128.254:389",
+		user:        "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US",
+		pwd:         "Fr33b33r!",
+		base:        "DC=INT,DC=ARKLOUDDEMO,DC=US",
+		insecureTLS: true,
 	}
 	return cfg
+
 }
 
 func TestCreateGroup(t *testing.T) {
@@ -27,6 +28,8 @@ func TestCreateGroup(t *testing.T) {
 	assert.NotNil(t, ad)
 
 	ctx := cloudy.StartContext()
+	err := ad.connect(ctx)
+	assert.Nil(t, err)
 
 	newGrp := &models.Group{
 		Name: "TestGroup",
@@ -34,5 +37,88 @@ func TestCreateGroup(t *testing.T) {
 
 	grp, err := ad.NewGroup(ctx, newGrp)
 	assert.NotNil(t, grp)
+	assert.Nil(t, err)
+}
+
+func TestGetGroup(t *testing.T) {
+	cfg := initGroupManager()
+	assert.NotNil(t, cfg)
+
+	ad := NewAdGroupManager(cfg)
+	assert.NotNil(t, ad)
+
+	ctx := cloudy.StartContext()
+	err := ad.connect(ctx)
+	assert.Nil(t, err)
+
+	grp, err := ad.GetGroup(ctx, "CN=TestGroup,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	assert.NotNil(t, grp)
+	assert.Nil(t, err)
+}
+
+func TestGetGroupId(t *testing.T) {
+	cfg := initGroupManager()
+	assert.NotNil(t, cfg)
+
+	ad := NewAdGroupManager(cfg)
+	assert.NotNil(t, ad)
+
+	ctx := cloudy.StartContext()
+	err := ad.connect(ctx)
+	assert.Nil(t, err)
+
+	grp, err := ad.GetGroupId(ctx, "TestGroup")
+	assert.NotNil(t, grp)
+	assert.Nil(t, err)
+}
+
+func TestAddGroupMembers(t *testing.T) {
+	cfg := initGroupManager()
+	assert.NotNil(t, cfg)
+
+	ad := NewAdGroupManager(cfg)
+	assert.NotNil(t, ad)
+
+	ctx := cloudy.StartContext()
+	err := ad.connect(ctx)
+	assert.Nil(t, err)
+
+	users := []string{}
+	users = append(users, "test-user")
+
+	err = ad.AddMembers(ctx, "TestGroup", users)
+	assert.Nil(t, err)
+}
+
+func TestRemoveGroupMembers(t *testing.T) {
+	cfg := initGroupManager()
+	assert.NotNil(t, cfg)
+
+	ad := NewAdGroupManager(cfg)
+	assert.NotNil(t, ad)
+
+	ctx := cloudy.StartContext()
+	err := ad.connect(ctx)
+	assert.Nil(t, err)
+
+	users := []string{}
+	users = append(users, "test-user")
+
+	err = ad.RemoveMembers(ctx, "TestGroup", users)
+	assert.Nil(t, err)
+}
+
+func TestDeleteGroup(t *testing.T) {
+	cfg := initGroupManager()
+	assert.NotNil(t, cfg)
+
+	ad := NewAdGroupManager(cfg)
+	assert.NotNil(t, ad)
+
+	ctx := cloudy.StartContext()
+	err := ad.connect(ctx)
+	assert.Nil(t, err)
+
+	err = ad.DeleteGroup(ctx, "CN=TestGroup,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
 	assert.Nil(t, err)
 }

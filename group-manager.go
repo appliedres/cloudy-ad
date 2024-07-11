@@ -53,6 +53,7 @@ func NewAdGroupManager(cfg *AdGroupManager) *AdGroupManager {
 			Password: cfg.pwd,
 		},
 	})
+
 	cfg.client = cl
 	return cfg
 }
@@ -70,10 +71,8 @@ func NewAdGroupManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdG
 }
 
 func (gm *AdGroupManager) connect(ctx context.Context) error {
-
-	err := gm.client.Connect()
-
-	return err
+	_ = ctx
+	return gm.client.Connect()
 }
 
 func (gm *AdGroupManager) ListGroups(ctx context.Context) ([]*models.Group, error) {
@@ -82,12 +81,20 @@ func (gm *AdGroupManager) ListGroups(ctx context.Context) ([]*models.Group, erro
 
 // Get a specific group by id
 func (gm *AdGroupManager) GetGroup(ctx context.Context, id string) (*models.Group, error) {
-	return nil, nil
+	args := adc.GetGroupArgs{
+		Dn: id,
+	}
+	grp, err := gm.client.GetGroup(args)
+	return groupToCloudy(grp), err
 }
 
 // Get a group id from name
 func (gm *AdGroupManager) GetGroupId(ctx context.Context, name string) (string, error) {
-	return "", nil
+	args := adc.GetGroupArgs{
+		Id: name,
+	}
+	grp, err := gm.client.GetGroup(args)
+	return grp.DN, err
 }
 
 // Get all the groups for a single user
@@ -97,7 +104,8 @@ func (gm *AdGroupManager) GetUserGroups(ctx context.Context, uid string) ([]*mod
 
 // Create a new Group
 func (gm *AdGroupManager) NewGroup(ctx context.Context, grp *models.Group) (*models.Group, error) {
-	err := gm.client.CreateGroup(gm.client.Config.Groups.SearchBase, cloudyToGroupAttributes(grp))
+	grp.ID = "CN=" + grp.Name + "," + gm.client.Config.Groups.SearchBase
+	err := gm.client.CreateGroup(grp.ID, cloudyToGroupAttributes(grp))
 	return grp, err
 }
 
@@ -113,17 +121,27 @@ func (gm *AdGroupManager) GetGroupMembers(ctx context.Context, grpId string) ([]
 }
 
 // Remove members from a group
-func (gm *AdGroupManager) RemoveMembers(ctx context.Context, groupId string, userIds []string) error {
-	return nil
+func (gm *AdGroupManager) RemoveMembers(ctx context.Context, groupName string, userNames []string) error {
+	_, err := gm.client.DeleteGroupMembers(groupName, userNames...)
+	return err
 }
 
 // Add member(s) to a group
-func (gm *AdGroupManager) AddMembers(ctx context.Context, groupId string, userIds []string) error {
-	return nil
+func (gm *AdGroupManager) AddMembers(ctx context.Context, groupName string, userNames []string) error {
+	_, err := gm.client.AddGroupMembers(groupName, userNames...)
+	return err
 }
 
 func (gm *AdGroupManager) DeleteGroup(ctx context.Context, groupId string) error {
-	return nil
+	return gm.client.DeleteGroup(groupId)
+}
+
+func groupToCloudy(adc *adc.Group) *models.Group {
+	grp := &models.Group{
+		ID:   adc.DN,
+		Name: adc.Id,
+	}
+	return grp
 }
 
 func cloudyToGroupAttributes(grp *models.Group) []ldap.Attribute {
@@ -133,6 +151,10 @@ func cloudyToGroupAttributes(grp *models.Group) []ldap.Attribute {
 	}
 	name := &ldap.Attribute{
 		Type: "name",
+		Vals: []string{grp.Name},
+	}
+	sAMAccountName := &ldap.Attribute{
+		Type: "sAMAccountName",
 		Vals: []string{grp.Name},
 	}
 	instanceType := &ldap.Attribute{
@@ -147,6 +169,7 @@ func cloudyToGroupAttributes(grp *models.Group) []ldap.Attribute {
 
 	attrs = append(attrs, *objectClass)
 	attrs = append(attrs, *name)
+	attrs = append(attrs, *sAMAccountName)
 	attrs = append(attrs, *instanceType)
 	attrs = append(attrs, *groupType)
 
