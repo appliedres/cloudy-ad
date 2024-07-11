@@ -11,8 +11,8 @@ import (
 func initGroupManager() *AdGroupManager {
 	cfg := &AdGroupManager{
 		address:     "ldap://10.1.128.254:389",
-		user:        "CN=TESTUSER,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US",
-		pwd:         "Fr33b33r!!",
+		user:        "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US",
+		pwd:         "Fr33b33r!",
 		base:        "DC=INT,DC=ARKLOUDDEMO,DC=US",
 		insecureTLS: true,
 	}
@@ -28,6 +28,8 @@ func TestCreateGroup(t *testing.T) {
 	assert.NotNil(t, ad)
 
 	ctx := cloudy.StartContext()
+	err := ad.connect(ctx)
+	assert.Nil(t, err)
 
 	newGrp := &models.Group{
 		Name: "TestGroup",
@@ -47,7 +49,7 @@ func TestGetGroup(t *testing.T) {
 
 	ctx := cloudy.StartContext()
 	err := ad.connect(ctx)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 
 	grp, err := ad.GetGroup(ctx, "CN=TestGroup,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
 	assert.NotNil(t, grp)
@@ -63,7 +65,7 @@ func TestGetGroupId(t *testing.T) {
 
 	ctx := cloudy.StartContext()
 	err := ad.connect(ctx)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 
 	grp, err := ad.GetGroupId(ctx, "TestGroup")
 	assert.NotNil(t, grp)
@@ -79,10 +81,10 @@ func TestAddGroupMembers(t *testing.T) {
 
 	ctx := cloudy.StartContext()
 	err := ad.connect(ctx)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 
 	users := []string{}
-	users = append(users, "william-flentje")
+	users = append(users, "test-user")
 
 	err = ad.AddMembers(ctx, "TestGroup", users)
 	assert.Nil(t, err)
@@ -97,10 +99,10 @@ func TestRemoveGroupMembers(t *testing.T) {
 
 	ctx := cloudy.StartContext()
 	err := ad.connect(ctx)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 
 	users := []string{}
-	users = append(users, "william-flentje")
+	users = append(users, "test-user")
 
 	err = ad.RemoveMembers(ctx, "TestGroup", users)
 	assert.Nil(t, err)
@@ -115,7 +117,7 @@ func TestDeleteGroup(t *testing.T) {
 
 	ctx := cloudy.StartContext()
 	err := ad.connect(ctx)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 
 	err = ad.DeleteGroup(ctx, "CN=TestGroup,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
 	assert.Nil(t, err)

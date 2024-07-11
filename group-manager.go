@@ -104,7 +104,8 @@ func (gm *AdGroupManager) GetUserGroups(ctx context.Context, uid string) ([]*mod
 
 // Create a new Group
 func (gm *AdGroupManager) NewGroup(ctx context.Context, grp *models.Group) (*models.Group, error) {
-	err := gm.client.CreateGroup("CN="+grp.Name+","+gm.client.Config.Groups.SearchBase, cloudyToGroupAttributes(grp))
+	grp.ID = "CN=" + grp.Name + "," + gm.client.Config.Groups.SearchBase
+	err := gm.client.CreateGroup(grp.ID, cloudyToGroupAttributes(grp))
 	return grp, err
 }
 
