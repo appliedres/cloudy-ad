@@ -38,51 +38,50 @@ func (umf *AdUserManagerFactory) FromEnv(env *cloudy.Environment) (interface{}, 
 /// ------------- USER MANAGER
 
 type AdUserManager struct {
-	address string
-	user    string
-	pwd     string
-	base    string
-	client  *adc.Client
-	UserCN  string
+	address     string
+	user        string
+	pwd         string
+	base        string
+	insecureTLS bool
+	client      *adc.Client
+	UserCN      string
 }
 
-func NewAdUserManager(url string, user string, pwd string, base string) *AdUserManager {
+func NewAdUserManager(cfg *AdUserManager) *AdUserManager {
 	cl := adc.New(&adc.Config{
-		URL:         "ldaps://localhost:636",
-		InsecureTLS: true,
-		SearchBase:  "DC=ldap,DC=schneide,DC=dev",
+		URL:         cfg.address,
+		InsecureTLS: cfg.insecureTLS,
+		SearchBase:  cfg.base,
 		Users: &adc.UsersConfigs{
-			SearchBase: fmt.Sprintf("CN=Users,%v", base),
+			SearchBase: fmt.Sprintf("CN=Users,%v", cfg.base),
 		},
 		Groups: &adc.GroupsConfigs{
-			SearchBase: fmt.Sprintf("CN=Users,%v", base),
+			SearchBase: fmt.Sprintf("CN=Users,%v", cfg.base),
 		},
 		Bind: &adc.BindAccount{
-			DN:       "DEV-AD\\Administrator",
-			Password: "admin123!",
+			DN:       cfg.user,
+			Password: cfg.pwd,
 		},
 	})
-	return &AdUserManager{
-		client:  cl,
-		address: url,
-		user:    user,
-		pwd:     pwd,
-		base:    base,
-	}
+
+	cfg.client = cl
+	return cfg
 }
 
 func NewAdUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdUserManager {
 
-	address := env.Force("AD_HOST")
-	user := env.Force("AD_USER")
-	pwd := env.Force("AD_PWD")
-	base := env.Force("AD_BASE")
-
-	return NewAdUserManager(address, user, pwd, base)
+	cfg := &AdUserManager{
+		address:     env.Force("AD_HOST"),
+		user:        env.Force("AD_USER"),
+		pwd:         env.Force("AD_PWD"),
+		base:        env.Force("AD_BASE"),
+		insecureTLS: false,
+	}
+	return NewAdUserManager(cfg)
 }
 
 func (um *AdUserManager) connect(ctx context.Context) error {
-
+	_ = ctx
 	err := um.client.Connect()
 
 	return err
@@ -109,9 +108,9 @@ func (um *AdUserManager) ListUserPage(ctx context.Context, page *PageRequest) ([
 }
 
 // Retrieves a specific user.
-func (um *AdUserManager) GetUser(ctx context.Context, uid string) (*models.User, error) {
+func (um *AdUserManager) GetUser(ctx context.Context, id string) (*models.User, error) {
 	user, err := um.client.GetUser(adc.GetUserArgs{
-		Id: uid,
+		Dn: id,
 	})
 	if err != nil {
 		return nil, err

@@ -108,6 +108,22 @@ func TestRemoveGroupMembers(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestGetGroupMembers(t *testing.T) {
+	cfg := initGroupManager()
+	assert.NotNil(t, cfg)
+
+	ad := NewAdGroupManager(cfg)
+	assert.NotNil(t, ad)
+
+	ctx := cloudy.StartContext()
+	err := ad.connect(ctx)
+	assert.Nil(t, err)
+
+	users, err := ad.GetGroupMembers(ctx, "CN=TestGroup,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	assert.NotNil(t, users)
+	assert.Nil(t, err)
+}
+
 func TestDeleteGroup(t *testing.T) {
 	cfg := initGroupManager()
 	assert.NotNil(t, cfg)
