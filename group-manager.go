@@ -81,11 +81,17 @@ func (gm *AdGroupManager) ListGroups(ctx context.Context) ([]*models.Group, erro
 
 // Get a specific group by id
 func (gm *AdGroupManager) GetGroup(ctx context.Context, id string) (*models.Group, error) {
-	args := adc.GetGroupArgs{
+	grp, err := gm.client.GetGroup(adc.GetGroupArgs{
 		Dn: id,
+	})
+	if err != nil {
+		return nil, err
 	}
-	grp, err := gm.client.GetGroup(args)
-	return groupToCloudy(grp), err
+	if grp == nil {
+		return nil, nil
+	}
+
+	return groupAttributesToCloudy(grp), err
 }
 
 // Get a group id from name
@@ -117,7 +123,24 @@ func (gm *AdGroupManager) UpdateGroup(ctx context.Context, grp *models.Group) (b
 // Get all the members of a group. This returns partial users only,
 // typically just the user id, name and email fields
 func (gm *AdGroupManager) GetGroupMembers(ctx context.Context, grpId string) ([]*models.User, error) {
-	return nil, nil
+	grp, err := gm.client.GetGroup(adc.GetGroupArgs{
+		Dn: grpId,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if grp == nil {
+		return nil, nil
+	}
+	users := []*models.User{}
+	for _, user := range grp.Members {
+		usr := &models.User{
+			ID:  user.DN,
+			UPN: user.Id,
+		}
+		users = append(users, usr)
+	}
+	return users, nil
 }
 
 // Remove members from a group
@@ -136,7 +159,7 @@ func (gm *AdGroupManager) DeleteGroup(ctx context.Context, groupId string) error
 	return gm.client.DeleteGroup(groupId)
 }
 
-func groupToCloudy(adc *adc.Group) *models.Group {
+func groupAttributesToCloudy(adc *adc.Group) *models.Group {
 	grp := &models.Group{
 		ID:   adc.DN,
 		Name: adc.Id,
