@@ -11,11 +11,11 @@ import (
 
 func initUserManager() (*AdUserManager, context.Context, error) {
 	cfg := &AdUserManager{
-		address:     "ldap://10.1.128.254:389",
+		address:     "ldaps://10.1.128.254:636",
 		user:        "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US",
 		pwd:         "Fr33b33r!",
 		base:        "DC=INT,DC=ARKLOUDDEMO,DC=US",
-		insecureTLS: true,
+		insecureTLS: false,
 	}
 
 	ad := NewAdUserManager(cfg)
@@ -51,5 +51,34 @@ func TestCreateDisabledUser(t *testing.T) {
 	newUsr, err := ad.NewUser(ctx, usr)
 	assert.Nil(t, err)
 	assert.NotNil(t, newUsr)
+}
 
+func TestEnableUser(t *testing.T) {
+	ad, ctx, err := initUserManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	err = ad.Enable(ctx, "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	assert.Nil(t, err)
+}
+
+func TestDisableUser(t *testing.T) {
+	ad, ctx, err := initUserManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	err = ad.Disable(ctx, "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	assert.Nil(t, err)
+}
+
+func TestDeleteUser(t *testing.T) {
+	ad, ctx, err := initUserManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	err = ad.DeleteUser(ctx, "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	assert.Nil(t, err)
 }
