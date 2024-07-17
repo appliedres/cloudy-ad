@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/appliedres/cloudy"
 	"github.com/appliedres/cloudy/models"
+	"github.com/go-ldap/ldap/v3"
 
 	"github.com/appliedres/adc"
 )
@@ -131,8 +133,10 @@ func (um *AdUserManager) GetUserByEmail(ctx context.Context, email string, opts 
 // NewUser creates a new user with the given information and returns the new user with any additional
 // fields populated
 func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*models.User, error) {
-	return nil, nil
-
+	newUser.UPN = createUserName(newUser)
+	newUser.ID = "CN=" + newUser.UPN + "," + um.client.Config.Groups.SearchBase
+	err := um.client.CreateUser(newUser.ID, cloudyToUserAttributes(newUser))
+	return newUser, err
 }
 
 func (um *AdUserManager) UpdateUser(ctx context.Context, usr *models.User) error {
@@ -167,8 +171,7 @@ func UserToCloudy(user *adc.User) *models.User {
 		UPN:       user.GetStringAttribute("userPrincipalName"),
 		FirstName: user.GetStringAttribute("givenName"),
 		LastName:  user.GetStringAttribute("sn"),
-
-		Email: user.GetStringAttribute("mail"),
+		Email:     user.GetStringAttribute("mail"),
 		// AccountType:    user.GetStringAttribute("AccountType"),
 		// Citizenship:    user.GetStringAttribute("Citizenship"), (COUNTRY)
 		Company: user.GetStringAttribute("o"),
@@ -241,4 +244,67 @@ func UserToKeycloak(u *models.User) *adc.User {
 	// // }
 
 	return nil
+}
+
+func createUserName(usr *models.User) string {
+	userName := strings.ToLower(usr.FirstName + "-" + usr.LastName)
+	return userName
+}
+
+func cloudyToUserAttributes(usr *models.User) []ldap.Attribute {
+	objectClass := &ldap.Attribute{
+		Type: "objectClass",
+		Vals: []string{"top", "organizationalPerson", "user", "person"},
+	}
+	name := &ldap.Attribute{
+		Type: "name",
+		Vals: []string{usr.UPN},
+	}
+	sAMAccountName := &ldap.Attribute{
+		Type: "sAMAccountName",
+		Vals: []string{usr.UPN},
+	}
+	firstName := &ldap.Attribute{
+		Type: "givenName",
+		Vals: []string{usr.FirstName},
+	}
+	lastName := &ldap.Attribute{
+		Type: "sn",
+		Vals: []string{usr.LastName},
+	}
+	displayName := &ldap.Attribute{
+		Type: "displayName",
+		Vals: []string{usr.DisplayName},
+	}
+	email := &ldap.Attribute{
+		Type: "mail",
+		Vals: []string{usr.Email},
+	}
+	instanceType := &ldap.Attribute{
+		Type: "instanceType",
+		Vals: []string{fmt.Sprintf("%d", AC_INSTANCE_TYPE_WRITEABLE)},
+	}
+	userAccountControl := &ldap.Attribute{
+		Type: "userAccountControl",
+		Vals: []string{fmt.Sprintf("%d", AC_NORMAL_ACCOUNT|AC_ACCOUNTDISABLE)},
+	}
+	accountExpires := &ldap.Attribute{
+		Type: "accountExpires",
+		Vals: []string{fmt.Sprintf("%d", AC_ACCOUNT_NEVER_EXPIRES)},
+	}
+
+	attrs := []ldap.Attribute{}
+
+	attrs = append(attrs, *objectClass)
+	attrs = append(attrs, *name)
+	attrs = append(attrs, *sAMAccountName)
+	attrs = append(attrs, *firstName)
+	attrs = append(attrs, *lastName)
+	attrs = append(attrs, *displayName)
+	attrs = append(attrs, *email)
+	attrs = append(attrs, *instanceType)
+	attrs = append(attrs, *userAccountControl)
+	attrs = append(attrs, *accountExpires)
+
+	return attrs
 }

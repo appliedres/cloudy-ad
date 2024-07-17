@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/appliedres/cloudy"
+	"github.com/appliedres/cloudy/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,4 +34,22 @@ func TestGetUser(t *testing.T) {
 	user, err := ad.GetUser(ctx, "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
 	assert.Nil(t, err)
 	assert.NotNil(t, user)
+}
+
+func TestCreateDisabledUser(t *testing.T) {
+	ad, ctx, err := initUserManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	usr := &models.User{
+		DisplayName: "Test User",
+		FirstName:   "Test",
+		LastName:    "User",
+		Email:       "test.user@abc.com",
+	}
+	newUsr, err := ad.NewUser(ctx, usr)
+	assert.Nil(t, err)
+	assert.NotNil(t, newUsr)
+
 }
