@@ -93,11 +93,11 @@ func (um *AdUserManager) connect(ctx context.Context) error {
 // Then it checks to see if it is a real user
 // Returns: string - updated user name, bool - if the user exists, error - if an error is encountered
 func (um *AdUserManager) ForceUserName(ctx context.Context, name string) (string, bool, error) {
+
 	return name, false, nil
 }
 
 func (um *AdUserManager) ListUsers(ctx context.Context, page interface{}, filter interface{}) ([]*models.User, interface{}, error) {
-
 	return nil, nil, nil
 }
 
@@ -144,18 +144,23 @@ func (um *AdUserManager) UpdateUser(ctx context.Context, usr *models.User) error
 }
 
 func (um *AdUserManager) Enable(ctx context.Context, uid string) error {
-	return nil
-
+	userAccountControl := ldap.Attribute{
+		Type: "userAccountControl",
+		Vals: []string{fmt.Sprintf("%d", AC_NORMAL_ACCOUNT)},
+	}
+	return um.client.UpdateUser(uid, []ldap.Attribute{userAccountControl})
 }
 
 func (um *AdUserManager) Disable(ctx context.Context, uid string) error {
-	return nil
-
+	userAccountControl := ldap.Attribute{
+		Type: "userAccountControl",
+		Vals: []string{fmt.Sprintf("%d", AC_NORMAL_ACCOUNT|AC_ACCOUNTDISABLE)},
+	}
+	return um.client.UpdateUser(uid, []ldap.Attribute{userAccountControl})
 }
 
 func (um *AdUserManager) DeleteUser(ctx context.Context, uid string) error {
-	return nil
-
+	return um.client.DeleteUser(uid)
 }
 
 func UserToCloudy(user *adc.User) *models.User {
