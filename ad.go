@@ -3,6 +3,7 @@ package cloudyad
 const GuidUsers = "A9D1CA15768811D1ADED00C04FD8D5CD"
 
 const (
+	AC_ACCOUNT_NEVER_EXPIRES          = 0x00000000 // 0
 	AC_SCRIPT                         = 0x0001     // 1	The logon script will be run.
 	AC_ACCOUNTDISABLE                 = 0x0002     // 2	The user account is disabled.
 	AC_HOMEDIR_REQUIRED               = 0x0008     // 8	The home folder is required.
