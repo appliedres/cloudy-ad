@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/appliedres/adc"
 	"github.com/appliedres/cloudy"
 	"github.com/appliedres/cloudy/models"
 	"github.com/go-ldap/ldap/v3"
-
-	"github.com/appliedres/adc"
+	"golang.org/x/exp/maps"
 )
 
 type PageRequest struct {
@@ -67,11 +68,12 @@ func NewAdUserManager(cfg *AdUserManager) *AdUserManager {
 	})
 
 	cfg.client = cl
+	cl.Config.AppendUsesAttributes("displayName")
+
 	return cfg
 }
 
 func NewAdUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdUserManager {
-
 	cfg := &AdUserManager{
 		address:     env.Force("AD_HOST"),
 		user:        env.Force("AD_USER"),
@@ -93,7 +95,6 @@ func (um *AdUserManager) connect(ctx context.Context) error {
 // Then it checks to see if it is a real user
 // Returns: string - updated user name, bool - if the user exists, error - if an error is encountered
 func (um *AdUserManager) ForceUserName(ctx context.Context, name string) (string, bool, error) {
-
 	return name, false, nil
 }
 
@@ -121,26 +122,55 @@ func (um *AdUserManager) GetUser(ctx context.Context, id string) (*models.User, 
 		return nil, nil
 	}
 
-	return UserToCloudy(user), nil
+	return UserToCloudy(user, nil), nil
+}
+
+func (um *AdUserManager) GetUserWithAttributes(ctx context.Context, id string, attrs []string) (*models.User, error) {
+	user, err := um.client.GetUser(adc.GetUserArgs{
+		Dn:         id,
+		Attributes: attrs,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, nil
+	}
+
+	return UserToCloudy(user, nil), nil
 }
 
 // Retrieves a specific user.
 func (um *AdUserManager) GetUserByEmail(ctx context.Context, email string, opts *cloudy.UserOptions) (*models.User, error) {
+	user, err := um.client.GetUser(adc.GetUserArgs{
+		Filter:     "(&(objectclass=person)(mail=" + email + "))",
+		Attributes: []string{"lastLogon"},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, nil
+	}
 
-	return nil, nil
+	return UserToCloudy(user, opts), nil
 }
 
 // NewUser creates a new user with the given information and returns the new user with any additional
 // fields populated
 func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*models.User, error) {
-	newUser.UPN = createUserName(newUser)
-	newUser.ID = "CN=" + newUser.UPN + "," + um.client.Config.Groups.SearchBase
-	err := um.client.CreateUser(newUser.ID, cloudyToUserAttributes(newUser))
+	newUser.Username = createUserName(newUser)
+	newUser.UID = "CN=" + newUser.Username + "," + um.client.Config.Groups.SearchBase
+	err := um.client.CreateUser(newUser.UID, cloudyToUserAttributes(newUser))
 	return newUser, err
 }
 
 func (um *AdUserManager) UpdateUser(ctx context.Context, usr *models.User) error {
-	return nil
+	currentUser, err := um.GetUserWithAttributes(ctx, usr.UID, maps.Keys(usr.Attributes))
+	if err != nil {
+		return err
+	}
+	return um.client.UpdateUser(usr.UID, cloudyToModifiedAttributes(usr, currentUser))
 }
 
 func (um *AdUserManager) Enable(ctx context.Context, uid string) error {
@@ -163,34 +193,27 @@ func (um *AdUserManager) DeleteUser(ctx context.Context, uid string) error {
 	return um.client.DeleteUser(uid)
 }
 
-func UserToCloudy(user *adc.User) *models.User {
-	uacString := user.GetStringAttribute("userAccountControl")
-	uac, _ := strconv.Atoi(uacString)
-
-	enabled := (uac & AC_LOCKOUT) == 0
-
+func UserToCloudy(user *adc.User, opts *cloudy.UserOptions) *models.User {
 	u := &models.User{
-		Enabled: enabled,
-
-		ID:        user.Id,
-		UPN:       user.GetStringAttribute("userPrincipalName"),
-		FirstName: user.GetStringAttribute("givenName"),
-		LastName:  user.GetStringAttribute("sn"),
-		Email:     user.GetStringAttribute("mail"),
-		// AccountType:    user.GetStringAttribute("AccountType"),
-		// Citizenship:    user.GetStringAttribute("Citizenship"), (COUNTRY)
-		Company: user.GetStringAttribute("o"),
-		// ContractDate:   user.GetStringAttribute("ContractDate"),
-		// ContractNumber: user.GetStringAttribute("ContractNumber"),
-		// Department:     user.GetStringAttribute("Department"), department
+		UID:         user.DN,
+		Username:    user.Id,
+		FirstName:   user.GetStringAttribute("givenName"),
+		LastName:    user.GetStringAttribute("sn"),
+		Email:       user.GetStringAttribute("mail"),
 		DisplayName: user.GetStringAttribute("displayName"),
-		MobilePhone: user.GetStringAttribute("mobile"),
-		OfficePhone: user.GetStringAttribute("telephoneNumber"),
-		// Organization:   user.GetStringAttribute("Organization"),
-		JobTitle: user.GetStringAttribute("title"),
-		// ProgramRole:    user.GetStringAttribute("ProgramRole"),
-		// Project:        user.GetStringAttribute("Project"),
 	}
+
+	if *opts.IncludeLastSignIn {
+		var lastLogon int64
+		lastLogon, err := strconv.ParseInt(user.GetStringAttribute("lastLogon"), 10, 64)
+		if err == nil {
+			u.Attributes = make(map[string]string)
+			u.Attributes["lastLogon"] = time.Unix((lastLogon/10000000)-11644473600, 0).String()
+		}
+	}
+	// uacString := user.GetStringAttribute("userAccountControl")
+	// uac, _ := strconv.Atoi(uacString)
+	// enabled := (uac & AC_LOCKOUT) == 0
 
 	return u
 }
@@ -263,11 +286,11 @@ func cloudyToUserAttributes(usr *models.User) []ldap.Attribute {
 	}
 	name := &ldap.Attribute{
 		Type: "name",
-		Vals: []string{usr.UPN},
+		Vals: []string{usr.Username},
 	}
 	sAMAccountName := &ldap.Attribute{
 		Type: "sAMAccountName",
-		Vals: []string{usr.UPN},
+		Vals: []string{usr.Username},
 	}
 	firstName := &ldap.Attribute{
 		Type: "givenName",
@@ -311,5 +334,15 @@ func cloudyToUserAttributes(usr *models.User) []ldap.Attribute {
 	attrs = append(attrs, *userAccountControl)
 	attrs = append(attrs, *accountExpires)
 
+	return attrs
+}
+
+func cloudyToModifiedAttributes(updateReqUser *models.User, currentUser *models.User) []ldap.Attribute {
+	var attrs []ldap.Attribute
+	for v, k := range updateReqUser.Attributes {
+		fmt.Print(k)
+		fmt.Println(v)
+		fmt.Println(currentUser.Attributes[k])
+	}
 	return attrs
 }

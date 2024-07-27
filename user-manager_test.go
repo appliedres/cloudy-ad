@@ -15,7 +15,7 @@ func initUserManager() (*AdUserManager, context.Context, error) {
 		user:        "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US",
 		pwd:         "Fr33b33r!",
 		base:        "DC=INT,DC=ARKLOUDDEMO,DC=US",
-		insecureTLS: false,
+		insecureTLS: true,
 	}
 
 	ad := NewAdUserManager(cfg)
@@ -36,6 +36,29 @@ func TestGetUser(t *testing.T) {
 	assert.NotNil(t, user)
 }
 
+func TestGetUserByEmail(t *testing.T) {
+	ad, ctx, err := initUserManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	user, err := ad.GetUserByEmail(ctx, "jane.doe@us.af.mil", &cloudy.UserOptions{IncludeLastSignIn: cloudy.BoolP(true)})
+	assert.Nil(t, err)
+	assert.NotNil(t, user)
+}
+
+func TestGetUserWithAttributes(t *testing.T) {
+	ad, ctx, err := initUserManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	attrs := []string{"sAMAccountName", "telephoneNumber", "primaryGroupId"}
+	user, err := ad.GetUserWithAttributes(ctx, "jane.doe@us.af.mil", attrs)
+	assert.Nil(t, err)
+	assert.NotNil(t, user)
+}
+
 func TestCreateDisabledUser(t *testing.T) {
 	ad, ctx, err := initUserManager()
 	assert.Nil(t, err)
@@ -43,10 +66,10 @@ func TestCreateDisabledUser(t *testing.T) {
 	assert.NotNil(t, ctx)
 
 	usr := &models.User{
-		DisplayName: "Test User",
-		FirstName:   "Test",
-		LastName:    "User",
-		Email:       "test.user@abc.com",
+		DisplayName: "Jane Doe",
+		FirstName:   "Jane",
+		LastName:    "Doe",
+		Email:       "jane.doe@abc.com",
 	}
 	newUsr, err := ad.NewUser(ctx, usr)
 	assert.Nil(t, err)
@@ -70,6 +93,26 @@ func TestDisableUser(t *testing.T) {
 	assert.NotNil(t, ctx)
 
 	err = ad.Disable(ctx, "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	assert.Nil(t, err)
+}
+
+func TestUpdateUser(t *testing.T) {
+	ad, ctx, err := initUserManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	m := make(map[string]string)
+	m["telephoneNumber"] = "800-555-1212"
+	user := &models.User{
+		UID:         "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US",
+		Username:    "test-user",
+		FirstName:   "test",
+		LastName:    "user1",
+		DisplayName: "test user1",
+		Attributes:  m,
+	}
+	err = ad.UpdateUser(ctx, user)
 	assert.Nil(t, err)
 }
 
