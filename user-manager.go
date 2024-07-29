@@ -177,7 +177,7 @@ func (um *AdUserManager) GetUserByEmail(ctx context.Context, email string, opts 
 func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*models.User, error) {
 	newUser.Username = createUserName(newUser)
 	newUser.UID = "CN=" + newUser.Username + "," + um.client.Config.Groups.SearchBase
-	err := um.client.CreateUser(newUser.UID, cloudyToUserAttributes(newUser))
+	err := um.client.CreateUser(newUser.UID, *cloudyToUserAttributes(newUser))
 	return newUser, err
 }
 
@@ -186,7 +186,7 @@ func (um *AdUserManager) UpdateUser(ctx context.Context, usr *models.User) error
 	if err != nil || currentUser == nil {
 		return err
 	}
-	return um.client.UpdateUser(decodeToStr(usr.UID), cloudyToModifiedAttributes(usr, currentUser))
+	return um.client.UpdateUser(decodeToStr(usr.UID), *cloudyToModifiedAttributes(usr, currentUser))
 }
 
 func (um *AdUserManager) Enable(ctx context.Context, uid string) error {
@@ -297,7 +297,7 @@ func createUserName(usr *models.User) string {
 	return userName
 }
 
-func cloudyToUserAttributes(usr *models.User) []ldap.Attribute {
+func cloudyToUserAttributes(usr *models.User) *[]ldap.Attribute {
 	attrs := []ldap.Attribute{}
 
 	attrs = append(attrs, ldap.Attribute{
@@ -341,10 +341,10 @@ func cloudyToUserAttributes(usr *models.User) []ldap.Attribute {
 		Vals: []string{fmt.Sprintf("%d", AC_ACCOUNT_NEVER_EXPIRES)},
 	})
 
-	return attrs
+	return &attrs
 }
 
-func cloudyToModifiedAttributes(updateReqUser *models.User, currentUser *models.User) []ldap.Attribute {
+func cloudyToModifiedAttributes(updateReqUser *models.User, currentUser *models.User) *[]ldap.Attribute {
 	var attrs []ldap.Attribute
 
 	if currentUser.DisplayName == "" || currentUser.DisplayName != updateReqUser.DisplayName {
@@ -383,7 +383,7 @@ func cloudyToModifiedAttributes(updateReqUser *models.User, currentUser *models.
 			})
 		}
 	}
-	return attrs
+	return &attrs
 }
 
 func decodeToStr(encodedStr string) string {

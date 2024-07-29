@@ -2,6 +2,7 @@ package cloudyad
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 
 	"github.com/appliedres/cloudy"
@@ -82,7 +83,7 @@ func (gm *AdGroupManager) ListGroups(ctx context.Context) ([]*models.Group, erro
 // Get a specific group by id
 func (gm *AdGroupManager) GetGroup(ctx context.Context, id string) (*models.Group, error) {
 	grp, err := gm.client.GetGroup(adc.GetGroupArgs{
-		Dn: id,
+		Dn: decodeToStr(id),
 	})
 	if err != nil {
 		return nil, err
@@ -100,7 +101,7 @@ func (gm *AdGroupManager) GetGroupId(ctx context.Context, name string) (string, 
 		Id: name,
 	}
 	grp, err := gm.client.GetGroup(args)
-	return grp.DN, err
+	return base64.URLEncoding.EncodeToString([]byte(grp.DN)), err
 }
 
 // Get all the groups for a single user
@@ -111,7 +112,8 @@ func (gm *AdGroupManager) GetUserGroups(ctx context.Context, uid string) ([]*mod
 // Create a new Group
 func (gm *AdGroupManager) NewGroup(ctx context.Context, grp *models.Group) (*models.Group, error) {
 	grp.ID = "CN=" + grp.Name + "," + gm.client.Config.Groups.SearchBase
-	err := gm.client.CreateGroup(grp.ID, cloudyToGroupAttributes(grp))
+	err := gm.client.CreateGroup(grp.ID, *cloudyToGroupAttributes(grp))
+	grp.ID = base64.URLEncoding.EncodeToString([]byte(grp.ID))
 	return grp, err
 }
 
@@ -124,7 +126,7 @@ func (gm *AdGroupManager) UpdateGroup(ctx context.Context, grp *models.Group) (b
 // typically just the user id, name and email fields
 func (gm *AdGroupManager) GetGroupMembers(ctx context.Context, grpId string) ([]*models.User, error) {
 	grp, err := gm.client.GetGroup(adc.GetGroupArgs{
-		Dn: grpId,
+		Dn: decodeToStr(grpId),
 	})
 	if err != nil {
 		return nil, err
@@ -135,7 +137,7 @@ func (gm *AdGroupManager) GetGroupMembers(ctx context.Context, grpId string) ([]
 	users := []*models.User{}
 	for _, user := range grp.Members {
 		usr := &models.User{
-			UID:      user.DN,
+			UID:      base64.URLEncoding.EncodeToString([]byte(user.DN)),
 			Username: user.Id,
 		}
 		users = append(users, usr)
@@ -156,18 +158,18 @@ func (gm *AdGroupManager) AddMembers(ctx context.Context, groupName string, user
 }
 
 func (gm *AdGroupManager) DeleteGroup(ctx context.Context, groupId string) error {
-	return gm.client.DeleteGroup(groupId)
+	return gm.client.DeleteGroup(decodeToStr(groupId))
 }
 
 func groupAttributesToCloudy(adc *adc.Group) *models.Group {
 	grp := &models.Group{
-		ID:   adc.DN,
+		ID:   base64.URLEncoding.EncodeToString([]byte(adc.DN)),
 		Name: adc.Id,
 	}
 	return grp
 }
 
-func cloudyToGroupAttributes(grp *models.Group) []ldap.Attribute {
+func cloudyToGroupAttributes(grp *models.Group) *[]ldap.Attribute {
 	attrs := []ldap.Attribute{}
 
 	attrs = append(attrs, ldap.Attribute{
@@ -191,5 +193,5 @@ func cloudyToGroupAttributes(grp *models.Group) []ldap.Attribute {
 		Vals: []string{fmt.Sprintf("%d", ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP|ADS_GROUP_TYPE_SECURITY_ENABLED)},
 	})
 
-	return attrs
+	return &attrs
 }
