@@ -3,19 +3,10 @@ module github.com/appliedres/cloudy-ad
 go 1.22.1
 
 require (
-	github.com/appliedres/adc v0.0.0-20240627212546-ee8c614fe433
-	github.com/appliedres/cloudy v0.0.30
+	github.com/appliedres/adc v0.0.2
+	github.com/appliedres/cloudy v0.0.31
 	github.com/go-ldap/ldap/v3 v3.4.8
 	github.com/stretchr/testify v1.9.0
-)
-
-require (
-	github.com/go-openapi/analysis v0.21.5 // indirect
-	github.com/go-openapi/jsonpointer v0.20.1 // indirect
-	github.com/go-openapi/jsonreference v0.20.3 // indirect
-	github.com/go-openapi/loads v0.21.3 // indirect
-	github.com/go-openapi/spec v0.20.12 // indirect
-	github.com/go-openapi/validate v0.22.4 // indirect
 )
 
 require (
