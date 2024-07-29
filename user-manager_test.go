@@ -11,10 +11,10 @@ import (
 
 func initUserManager() (*AdUserManager, context.Context, error) {
 	cfg := &AdUserManager{
-		address:     "ldaps://10.1.128.254:636",
-		user:        "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US",
-		pwd:         "Fr33b33r!",
-		base:        "DC=INT,DC=ARKLOUDDEMO,DC=US",
+		address:     "ldaps://localhost:636",
+		user:        "DEV-AD\\Administrator",
+		pwd:         "admin123!",
+		base:        "DC=ldap,DC=schneide,DC=dev",
 		insecureTLS: true,
 	}
 
@@ -31,7 +31,18 @@ func TestGetUser(t *testing.T) {
 	assert.NotNil(t, ad)
 	assert.NotNil(t, ctx)
 
-	user, err := ad.GetUser(ctx, "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	user, err := ad.GetUser(ctx, "CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")
+	assert.Nil(t, err)
+	assert.NotNil(t, user)
+}
+
+func TestGetUserByUserName(t *testing.T) {
+	ad, ctx, err := initUserManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	user, err := ad.GetUserByUserName(ctx, "jane-doe")
 	assert.Nil(t, err)
 	assert.NotNil(t, user)
 }
@@ -69,7 +80,7 @@ func TestCreateDisabledUser(t *testing.T) {
 		DisplayName: "Jane Doe",
 		FirstName:   "Jane",
 		LastName:    "Doe",
-		Email:       "jane.doe@abc.com",
+		Email:       "jane.doe@us.af.mil",
 	}
 	newUsr, err := ad.NewUser(ctx, usr)
 	assert.Nil(t, err)
@@ -82,7 +93,7 @@ func TestEnableUser(t *testing.T) {
 	assert.NotNil(t, ad)
 	assert.NotNil(t, ctx)
 
-	err = ad.Enable(ctx, "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	err = ad.Enable(ctx, "CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")
 	assert.Nil(t, err)
 }
 
@@ -92,7 +103,7 @@ func TestDisableUser(t *testing.T) {
 	assert.NotNil(t, ad)
 	assert.NotNil(t, ctx)
 
-	err = ad.Disable(ctx, "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	err = ad.Disable(ctx, "CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")
 	assert.Nil(t, err)
 }
 
@@ -105,11 +116,12 @@ func TestUpdateUser(t *testing.T) {
 	m := make(map[string]string)
 	m["telephoneNumber"] = "800-555-1212"
 	user := &models.User{
-		UID:         "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US",
-		Username:    "test-user",
-		FirstName:   "test",
-		LastName:    "user1",
-		DisplayName: "test user1",
+		UID:         "CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev",
+		Username:    "jane-doe",
+		FirstName:   "jane1",
+		LastName:    "doe1",
+		DisplayName: "jane1 doe1",
+		Email:       "jane.doe@us.af.mil",
 		Attributes:  m,
 	}
 	err = ad.UpdateUser(ctx, user)

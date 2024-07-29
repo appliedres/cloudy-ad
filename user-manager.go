@@ -68,7 +68,7 @@ func NewAdUserManager(cfg *AdUserManager) *AdUserManager {
 	})
 
 	cfg.client = cl
-	cl.Config.AppendUsesAttributes("displayName")
+	cl.Config.AppendUsesAttributes(DISPLAY_NAME_TYPE)
 
 	return cfg
 }
@@ -125,6 +125,20 @@ func (um *AdUserManager) GetUser(ctx context.Context, id string) (*models.User, 
 	return UserToCloudy(user, nil), nil
 }
 
+func (um *AdUserManager) GetUserByUserName(ctx context.Context, un string) (*models.User, error) {
+	user, err := um.client.GetUser(adc.GetUserArgs{
+		Id: un,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, nil
+	}
+
+	return UserToCloudy(user, nil), nil
+}
+
 func (um *AdUserManager) GetUserWithAttributes(ctx context.Context, id string, attrs []string) (*models.User, error) {
 	user, err := um.client.GetUser(adc.GetUserArgs{
 		Dn:         id,
@@ -144,7 +158,7 @@ func (um *AdUserManager) GetUserWithAttributes(ctx context.Context, id string, a
 func (um *AdUserManager) GetUserByEmail(ctx context.Context, email string, opts *cloudy.UserOptions) (*models.User, error) {
 	user, err := um.client.GetUser(adc.GetUserArgs{
 		Filter:     "(&(objectclass=person)(mail=" + email + "))",
-		Attributes: []string{"lastLogon"},
+		Attributes: []string{FIRST_NAME_TYPE, LAST_NAME_TYPE, EMAIL_TYPE, DISPLAY_NAME_TYPE, LAST_LOGIN_TYPE},
 	})
 	if err != nil {
 		return nil, err
@@ -167,7 +181,7 @@ func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*mo
 
 func (um *AdUserManager) UpdateUser(ctx context.Context, usr *models.User) error {
 	currentUser, err := um.GetUserWithAttributes(ctx, usr.UID, maps.Keys(usr.Attributes))
-	if err != nil {
+	if err != nil || currentUser == nil {
 		return err
 	}
 	return um.client.UpdateUser(usr.UID, cloudyToModifiedAttributes(usr, currentUser))
@@ -175,7 +189,7 @@ func (um *AdUserManager) UpdateUser(ctx context.Context, usr *models.User) error
 
 func (um *AdUserManager) Enable(ctx context.Context, uid string) error {
 	userAccountControl := ldap.Attribute{
-		Type: "userAccountControl",
+		Type: USER_ACCOUNT_CONTROL_TYPE,
 		Vals: []string{fmt.Sprintf("%d", AC_NORMAL_ACCOUNT)},
 	}
 	return um.client.UpdateUser(uid, []ldap.Attribute{userAccountControl})
@@ -183,7 +197,7 @@ func (um *AdUserManager) Enable(ctx context.Context, uid string) error {
 
 func (um *AdUserManager) Disable(ctx context.Context, uid string) error {
 	userAccountControl := ldap.Attribute{
-		Type: "userAccountControl",
+		Type: USER_ACCOUNT_CONTROL_TYPE,
 		Vals: []string{fmt.Sprintf("%d", AC_NORMAL_ACCOUNT|AC_ACCOUNTDISABLE)},
 	}
 	return um.client.UpdateUser(uid, []ldap.Attribute{userAccountControl})
@@ -197,21 +211,22 @@ func UserToCloudy(user *adc.User, opts *cloudy.UserOptions) *models.User {
 	u := &models.User{
 		UID:         user.DN,
 		Username:    user.Id,
-		FirstName:   user.GetStringAttribute("givenName"),
-		LastName:    user.GetStringAttribute("sn"),
-		Email:       user.GetStringAttribute("mail"),
-		DisplayName: user.GetStringAttribute("displayName"),
+		FirstName:   user.GetStringAttribute(FIRST_NAME_TYPE),
+		LastName:    user.GetStringAttribute(LAST_NAME_TYPE),
+		Email:       user.GetStringAttribute(EMAIL_TYPE),
+		DisplayName: user.GetStringAttribute(DISPLAY_NAME_TYPE),
 	}
 
-	if *opts.IncludeLastSignIn {
+	if opts != nil && *opts.IncludeLastSignIn {
 		var lastLogon int64
-		lastLogon, err := strconv.ParseInt(user.GetStringAttribute("lastLogon"), 10, 64)
+		lastLogon, err := strconv.ParseInt(user.GetStringAttribute(LAST_LOGIN_TYPE), 10, 64)
 		if err == nil {
 			u.Attributes = make(map[string]string)
-			u.Attributes["lastLogon"] = time.Unix((lastLogon/10000000)-11644473600, 0).String()
+			// Windows NT time format to linux time
+			u.Attributes[LAST_LOGIN_TYPE] = time.Unix((lastLogon/10000000)-11644473600, 0).String()
 		}
 	}
-	// uacString := user.GetStringAttribute("userAccountControl")
+	// uacString := user.GetStringAttribute(USER_ACCOUNT_CONTROL_TYPE)
 	// uac, _ := strconv.Atoi(uacString)
 	// enabled := (uac & AC_LOCKOUT) == 0
 
@@ -280,69 +295,90 @@ func createUserName(usr *models.User) string {
 }
 
 func cloudyToUserAttributes(usr *models.User) []ldap.Attribute {
-	objectClass := &ldap.Attribute{
-		Type: "objectClass",
-		Vals: []string{"top", "organizationalPerson", "user", "person"},
-	}
-	name := &ldap.Attribute{
-		Type: "name",
-		Vals: []string{usr.Username},
-	}
-	sAMAccountName := &ldap.Attribute{
-		Type: "sAMAccountName",
-		Vals: []string{usr.Username},
-	}
-	firstName := &ldap.Attribute{
-		Type: "givenName",
-		Vals: []string{usr.FirstName},
-	}
-	lastName := &ldap.Attribute{
-		Type: "sn",
-		Vals: []string{usr.LastName},
-	}
-	displayName := &ldap.Attribute{
-		Type: "displayName",
-		Vals: []string{usr.DisplayName},
-	}
-	email := &ldap.Attribute{
-		Type: "mail",
-		Vals: []string{usr.Email},
-	}
-	instanceType := &ldap.Attribute{
-		Type: "instanceType",
-		Vals: []string{fmt.Sprintf("%d", AC_INSTANCE_TYPE_WRITEABLE)},
-	}
-	userAccountControl := &ldap.Attribute{
-		Type: "userAccountControl",
-		Vals: []string{fmt.Sprintf("%d", AC_NORMAL_ACCOUNT|AC_ACCOUNTDISABLE)},
-	}
-	accountExpires := &ldap.Attribute{
-		Type: "accountExpires",
-		Vals: []string{fmt.Sprintf("%d", AC_ACCOUNT_NEVER_EXPIRES)},
-	}
-
 	attrs := []ldap.Attribute{}
 
-	attrs = append(attrs, *objectClass)
-	attrs = append(attrs, *name)
-	attrs = append(attrs, *sAMAccountName)
-	attrs = append(attrs, *firstName)
-	attrs = append(attrs, *lastName)
-	attrs = append(attrs, *displayName)
-	attrs = append(attrs, *email)
-	attrs = append(attrs, *instanceType)
-	attrs = append(attrs, *userAccountControl)
-	attrs = append(attrs, *accountExpires)
+	attrs = append(attrs, ldap.Attribute{
+		Type: OBJ_CLASS_TYPE,
+		Vals: USER_OBJ_CLASS_VALS,
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: USERNAME_TYPE,
+		Vals: []string{usr.Username},
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: SAM_ACCT_NAME_TYPE,
+		Vals: []string{usr.Username},
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: FIRST_NAME_TYPE,
+		Vals: []string{usr.FirstName},
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: LAST_NAME_TYPE,
+		Vals: []string{usr.LastName},
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: DISPLAY_NAME_TYPE,
+		Vals: []string{usr.DisplayName},
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: EMAIL_TYPE,
+		Vals: []string{usr.Email},
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: INSTANCE_TYPE,
+		Vals: []string{fmt.Sprintf("%d", AC_INSTANCE_TYPE_WRITEABLE)},
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: USER_ACCOUNT_CONTROL_TYPE,
+		Vals: []string{fmt.Sprintf("%d", AC_NORMAL_ACCOUNT|AC_ACCOUNTDISABLE)},
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: ACCT_EXPIRES_TYPE,
+		Vals: []string{fmt.Sprintf("%d", AC_ACCOUNT_NEVER_EXPIRES)},
+	})
 
 	return attrs
 }
 
 func cloudyToModifiedAttributes(updateReqUser *models.User, currentUser *models.User) []ldap.Attribute {
 	var attrs []ldap.Attribute
-	for v, k := range updateReqUser.Attributes {
-		fmt.Print(k)
-		fmt.Println(v)
-		fmt.Println(currentUser.Attributes[k])
+
+	if currentUser.DisplayName == "" || currentUser.DisplayName != updateReqUser.DisplayName {
+		attrs = append(attrs, ldap.Attribute{
+			Type: DISPLAY_NAME_TYPE,
+			Vals: []string{updateReqUser.DisplayName},
+		})
+	}
+
+	if currentUser.Email == "" || currentUser.Email != updateReqUser.Email {
+		attrs = append(attrs, ldap.Attribute{
+			Type: EMAIL_TYPE,
+			Vals: []string{updateReqUser.Email},
+		})
+	}
+
+	if currentUser.FirstName == "" || currentUser.FirstName != updateReqUser.FirstName {
+		attrs = append(attrs, ldap.Attribute{
+			Type: FIRST_NAME_TYPE,
+			Vals: []string{updateReqUser.FirstName},
+		})
+	}
+
+	if currentUser.LastName == "" || currentUser.LastName != updateReqUser.LastName {
+		attrs = append(attrs, ldap.Attribute{
+			Type: LAST_NAME_TYPE,
+			Vals: []string{updateReqUser.LastName},
+		})
+	}
+
+	for k, v := range updateReqUser.Attributes {
+		if currentUser.Attributes[k] == "" || currentUser.Attributes[k] != v {
+			attrs = append(attrs, ldap.Attribute{
+				Type: k,
+				Vals: []string{v},
+			})
+		}
 	}
 	return attrs
 }

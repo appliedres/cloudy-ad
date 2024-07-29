@@ -168,33 +168,28 @@ func groupAttributesToCloudy(adc *adc.Group) *models.Group {
 }
 
 func cloudyToGroupAttributes(grp *models.Group) []ldap.Attribute {
-	objectClass := &ldap.Attribute{
-		Type: "objectClass",
-		Vals: []string{"top", "group"},
-	}
-	name := &ldap.Attribute{
-		Type: "name",
-		Vals: []string{grp.Name},
-	}
-	sAMAccountName := &ldap.Attribute{
-		Type: "sAMAccountName",
-		Vals: []string{grp.Name},
-	}
-	instanceType := &ldap.Attribute{
-		Type: "instanceType",
-		Vals: []string{fmt.Sprintf("%d", AC_INSTANCE_TYPE_WRITEABLE)},
-	}
-	groupType := &ldap.Attribute{
-		Type: "groupType",
-		Vals: []string{fmt.Sprintf("%d", ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP|ADS_GROUP_TYPE_SECURITY_ENABLED)},
-	}
 	attrs := []ldap.Attribute{}
 
-	attrs = append(attrs, *objectClass)
-	attrs = append(attrs, *name)
-	attrs = append(attrs, *sAMAccountName)
-	attrs = append(attrs, *instanceType)
-	attrs = append(attrs, *groupType)
+	attrs = append(attrs, ldap.Attribute{
+		Type: OBJ_CLASS_TYPE,
+		Vals: GROUP_OBJ_CLASS_VALS,
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: GROUP_NAME_TYPE,
+		Vals: []string{grp.Name},
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: SAM_ACCT_NAME_TYPE,
+		Vals: []string{grp.Name},
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: INSTANCE_TYPE,
+		Vals: []string{fmt.Sprintf("%d", AC_INSTANCE_TYPE_WRITEABLE)},
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: GROUP_TYPE,
+		Vals: []string{fmt.Sprintf("%d", ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP|ADS_GROUP_TYPE_SECURITY_ENABLED)},
+	})
 
 	return attrs
 }
