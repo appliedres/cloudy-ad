@@ -2,6 +2,7 @@ package cloudyad
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strconv"
 	"strings"
@@ -111,9 +112,9 @@ func (um *AdUserManager) ListUserPage(ctx context.Context, page *PageRequest) ([
 }
 
 // Retrieves a specific user.
-func (um *AdUserManager) GetUser(ctx context.Context, id string) (*models.User, error) {
+func (um *AdUserManager) GetUser(ctx context.Context, uid string) (*models.User, error) {
 	user, err := um.client.GetUser(adc.GetUserArgs{
-		Dn: id,
+		Dn: decodeToStr(uid),
 	})
 	if err != nil {
 		return nil, err
@@ -125,6 +126,7 @@ func (um *AdUserManager) GetUser(ctx context.Context, id string) (*models.User, 
 	return UserToCloudy(user, nil), nil
 }
 
+// not adding to Cloudy unless needed
 func (um *AdUserManager) GetUserByUserName(ctx context.Context, un string) (*models.User, error) {
 	user, err := um.client.GetUser(adc.GetUserArgs{
 		Id: un,
@@ -139,10 +141,10 @@ func (um *AdUserManager) GetUserByUserName(ctx context.Context, un string) (*mod
 	return UserToCloudy(user, nil), nil
 }
 
-func (um *AdUserManager) GetUserWithAttributes(ctx context.Context, id string, attrs []string) (*models.User, error) {
+func (um *AdUserManager) GetUserWithAttributes(ctx context.Context, uid string, attrs []string) (*models.User, error) {
 	user, err := um.client.GetUser(adc.GetUserArgs{
-		Dn:         id,
-		Attributes: attrs,
+		Dn:         decodeToStr(uid),
+		Attributes: append(attrs, USER_STANDARD_ATTRS...),
 	})
 	if err != nil {
 		return nil, err
@@ -158,7 +160,7 @@ func (um *AdUserManager) GetUserWithAttributes(ctx context.Context, id string, a
 func (um *AdUserManager) GetUserByEmail(ctx context.Context, email string, opts *cloudy.UserOptions) (*models.User, error) {
 	user, err := um.client.GetUser(adc.GetUserArgs{
 		Filter:     "(&(objectclass=person)(mail=" + email + "))",
-		Attributes: []string{FIRST_NAME_TYPE, LAST_NAME_TYPE, EMAIL_TYPE, DISPLAY_NAME_TYPE, LAST_LOGIN_TYPE},
+		Attributes: USER_STANDARD_ATTRS,
 	})
 	if err != nil {
 		return nil, err
@@ -184,7 +186,7 @@ func (um *AdUserManager) UpdateUser(ctx context.Context, usr *models.User) error
 	if err != nil || currentUser == nil {
 		return err
 	}
-	return um.client.UpdateUser(usr.UID, cloudyToModifiedAttributes(usr, currentUser))
+	return um.client.UpdateUser(decodeToStr(usr.UID), cloudyToModifiedAttributes(usr, currentUser))
 }
 
 func (um *AdUserManager) Enable(ctx context.Context, uid string) error {
@@ -192,7 +194,8 @@ func (um *AdUserManager) Enable(ctx context.Context, uid string) error {
 		Type: USER_ACCOUNT_CONTROL_TYPE,
 		Vals: []string{fmt.Sprintf("%d", AC_NORMAL_ACCOUNT)},
 	}
-	return um.client.UpdateUser(uid, []ldap.Attribute{userAccountControl})
+
+	return um.client.UpdateUser(decodeToStr(uid), []ldap.Attribute{userAccountControl})
 }
 
 func (um *AdUserManager) Disable(ctx context.Context, uid string) error {
@@ -200,16 +203,16 @@ func (um *AdUserManager) Disable(ctx context.Context, uid string) error {
 		Type: USER_ACCOUNT_CONTROL_TYPE,
 		Vals: []string{fmt.Sprintf("%d", AC_NORMAL_ACCOUNT|AC_ACCOUNTDISABLE)},
 	}
-	return um.client.UpdateUser(uid, []ldap.Attribute{userAccountControl})
+	return um.client.UpdateUser(decodeToStr(uid), []ldap.Attribute{userAccountControl})
 }
 
 func (um *AdUserManager) DeleteUser(ctx context.Context, uid string) error {
-	return um.client.DeleteUser(uid)
+	return um.client.DeleteUser(decodeToStr(uid))
 }
 
 func UserToCloudy(user *adc.User, opts *cloudy.UserOptions) *models.User {
 	u := &models.User{
-		UID:         user.DN,
+		UID:         base64.URLEncoding.EncodeToString([]byte(user.DN)),
 		Username:    user.Id,
 		FirstName:   user.GetStringAttribute(FIRST_NAME_TYPE),
 		LastName:    user.GetStringAttribute(LAST_NAME_TYPE),
@@ -381,4 +384,12 @@ func cloudyToModifiedAttributes(updateReqUser *models.User, currentUser *models.
 		}
 	}
 	return attrs
+}
+
+func decodeToStr(encodedStr string) string {
+	bytes, err := base64.URLEncoding.DecodeString(encodedStr)
+	if err != nil {
+		return ("")
+	}
+	return (string(bytes))
 }

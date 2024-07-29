@@ -47,3 +47,5 @@ const GROUP_TYPE = "groupType"
 
 var USER_OBJ_CLASS_VALS = []string{"top", "organizationalPerson", "user", "person"}
 var GROUP_OBJ_CLASS_VALS = []string{"top", "group"}
+
+var USER_STANDARD_ATTRS = []string{FIRST_NAME_TYPE, LAST_NAME_TYPE, EMAIL_TYPE, DISPLAY_NAME_TYPE, LAST_LOGIN_TYPE}

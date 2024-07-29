@@ -119,7 +119,7 @@ func TestGetGroupMembers(t *testing.T) {
 	err := ad.connect(ctx)
 	assert.Nil(t, err)
 
-	users, err := ad.GetGroupMembers(ctx, "CN=TestGroup,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	users, err := ad.GetGroupMembers(ctx, "CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")
 	assert.NotNil(t, users)
 	assert.Nil(t, err)
 }
