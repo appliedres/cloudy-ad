@@ -10,10 +10,10 @@ import (
 
 func initGroupManager() *AdGroupManager {
 	cfg := &AdGroupManager{
-		address:     "ldap://10.1.128.254:389",
-		user:        "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US",
-		pwd:         "Fr33b33r!",
-		base:        "DC=INT,DC=ARKLOUDDEMO,DC=US",
+		address:     "ldaps://localhost:636",
+		user:        "DEV-AD\\Administrator",
+		pwd:         "admin123!",
+		base:        "DC=ldap,DC=schneide,DC=dev",
 		insecureTLS: true,
 	}
 	return cfg
@@ -51,7 +51,7 @@ func TestGetGroup(t *testing.T) {
 	err := ad.connect(ctx)
 	assert.Nil(t, err)
 
-	grp, err := ad.GetGroup(ctx, "CN=TestGroup,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	grp, err := ad.GetGroup(ctx, "CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")
 	assert.NotNil(t, grp)
 	assert.Nil(t, err)
 }
@@ -119,7 +119,7 @@ func TestGetGroupMembers(t *testing.T) {
 	err := ad.connect(ctx)
 	assert.Nil(t, err)
 
-	users, err := ad.GetGroupMembers(ctx, "CN=TestGroup,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	users, err := ad.GetGroupMembers(ctx, "CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")
 	assert.NotNil(t, users)
 	assert.Nil(t, err)
 }

@@ -2,6 +2,7 @@ package cloudyad
 
 import (
 	"context"
+	"encoding/base64"
 	"testing"
 
 	"github.com/appliedres/cloudy"
@@ -11,11 +12,11 @@ import (
 
 func initUserManager() (*AdUserManager, context.Context, error) {
 	cfg := &AdUserManager{
-		address:     "ldaps://10.1.128.254:636",
-		user:        "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US",
-		pwd:         "Fr33b33r!",
-		base:        "DC=INT,DC=ARKLOUDDEMO,DC=US",
-		insecureTLS: false,
+		address:     "ldaps://localhost:636",
+		user:        "DEV-AD\\Administrator",
+		pwd:         "admin123!",
+		base:        "DC=ldap,DC=schneide,DC=dev",
+		insecureTLS: true,
 	}
 
 	ad := NewAdUserManager(cfg)
@@ -31,7 +32,41 @@ func TestGetUser(t *testing.T) {
 	assert.NotNil(t, ad)
 	assert.NotNil(t, ctx)
 
-	user, err := ad.GetUser(ctx, "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	user, err := ad.GetUser(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	assert.Nil(t, err)
+	assert.NotNil(t, user)
+}
+
+func TestGetUserByUserName(t *testing.T) {
+	ad, ctx, err := initUserManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	user, err := ad.GetUserByUserName(ctx, "jane-doe")
+	assert.Nil(t, err)
+	assert.NotNil(t, user)
+}
+
+func TestGetUserByEmail(t *testing.T) {
+	ad, ctx, err := initUserManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	user, err := ad.GetUserByEmail(ctx, "jane.doe@us.af.mil", &cloudy.UserOptions{IncludeLastSignIn: cloudy.BoolP(true)})
+	assert.Nil(t, err)
+	assert.NotNil(t, user)
+}
+
+func TestGetUserWithAttributes(t *testing.T) {
+	ad, ctx, err := initUserManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	attrs := []string{"sAMAccountName", "telephoneNumber", "primaryGroupId"}
+	user, err := ad.GetUserWithAttributes(ctx, "jane.doe@us.af.mil", attrs)
 	assert.Nil(t, err)
 	assert.NotNil(t, user)
 }
@@ -43,10 +78,10 @@ func TestCreateDisabledUser(t *testing.T) {
 	assert.NotNil(t, ctx)
 
 	usr := &models.User{
-		DisplayName: "Test User",
-		FirstName:   "Test",
-		LastName:    "User",
-		Email:       "test.user@abc.com",
+		DisplayName: "Jane Doe",
+		FirstName:   "Jane",
+		LastName:    "Doe",
+		Email:       "jane.doe@us.af.mil",
 	}
 	newUsr, err := ad.NewUser(ctx, usr)
 	assert.Nil(t, err)
@@ -59,7 +94,7 @@ func TestEnableUser(t *testing.T) {
 	assert.NotNil(t, ad)
 	assert.NotNil(t, ctx)
 
-	err = ad.Enable(ctx, "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	err = ad.Enable(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
 	assert.Nil(t, err)
 }
 
@@ -69,7 +104,28 @@ func TestDisableUser(t *testing.T) {
 	assert.NotNil(t, ad)
 	assert.NotNil(t, ctx)
 
-	err = ad.Disable(ctx, "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	err = ad.Disable(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	assert.Nil(t, err)
+}
+
+func TestUpdateUser(t *testing.T) {
+	ad, ctx, err := initUserManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	m := make(map[string]string)
+	m["telephoneNumber"] = "800-555-1212"
+	user := &models.User{
+		UID:         base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")),
+		Username:    "jane-doe",
+		FirstName:   "jane2",
+		LastName:    "doe2",
+		DisplayName: "jane2 doe2",
+		Email:       "jane.doe@us.af.mil",
+		Attributes:  m,
+	}
+	err = ad.UpdateUser(ctx, user)
 	assert.Nil(t, err)
 }
 
@@ -79,6 +135,6 @@ func TestDeleteUser(t *testing.T) {
 	assert.NotNil(t, ad)
 	assert.NotNil(t, ctx)
 
-	err = ad.DeleteUser(ctx, "CN=test-user,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	err = ad.DeleteUser(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
 	assert.Nil(t, err)
 }

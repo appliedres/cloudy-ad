@@ -30,3 +30,22 @@ const (
 	ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP = 0x00000004 // Specifies a group that can contain accounts from any domain, other domain local groups from the same domain, global groups from any domain, and universal groups.
 	ADS_GROUP_TYPE_SECURITY_ENABLED   = 0x80000000 // Specifies a group that is security enabled. This group can be used to apply an access-control list on an ADSI object or a file system.
 )
+
+const DISPLAY_NAME_TYPE = "displayName"
+const FIRST_NAME_TYPE = "givenName"
+const LAST_NAME_TYPE = "sn"
+const EMAIL_TYPE = "mail"
+const LAST_LOGIN_TYPE = "lastLogon"
+const USER_ACCOUNT_CONTROL_TYPE = "userAccountControl"
+const USERNAME_TYPE = "name"
+const GROUP_NAME_TYPE = "name"
+const ACCT_EXPIRES_TYPE = "accountExpires"
+const OBJ_CLASS_TYPE = "objectClass"
+const INSTANCE_TYPE = "instanceType"
+const SAM_ACCT_NAME_TYPE = "sAMAccountName"
+const GROUP_TYPE = "groupType"
+
+var USER_OBJ_CLASS_VALS = []string{"top", "organizationalPerson", "user", "person"}
+var GROUP_OBJ_CLASS_VALS = []string{"top", "group"}
+
+var USER_STANDARD_ATTRS = []string{FIRST_NAME_TYPE, LAST_NAME_TYPE, EMAIL_TYPE, DISPLAY_NAME_TYPE, LAST_LOGIN_TYPE}
