@@ -1,6 +1,7 @@
 package cloudyad
 
 import (
+	"encoding/base64"
 	"testing"
 
 	"github.com/appliedres/cloudy"
@@ -51,7 +52,7 @@ func TestGetGroup(t *testing.T) {
 	err := ad.connect(ctx)
 	assert.Nil(t, err)
 
-	grp, err := ad.GetGroup(ctx, "CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")
+	grp, err := ad.GetGroup(ctx, base64.URLEncoding.EncodeToString([]byte("CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")))
 	assert.NotNil(t, grp)
 	assert.Nil(t, err)
 }
@@ -84,7 +85,7 @@ func TestAddGroupMembers(t *testing.T) {
 	assert.Nil(t, err)
 
 	users := []string{}
-	users = append(users, "test-user")
+	users = append(users, "jane-doe")
 
 	err = ad.AddMembers(ctx, "TestGroup", users)
 	assert.Nil(t, err)
@@ -102,7 +103,7 @@ func TestRemoveGroupMembers(t *testing.T) {
 	assert.Nil(t, err)
 
 	users := []string{}
-	users = append(users, "test-user")
+	users = append(users, "jane-doe")
 
 	err = ad.RemoveMembers(ctx, "TestGroup", users)
 	assert.Nil(t, err)
@@ -119,7 +120,7 @@ func TestGetGroupMembers(t *testing.T) {
 	err := ad.connect(ctx)
 	assert.Nil(t, err)
 
-	users, err := ad.GetGroupMembers(ctx, "CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")
+	users, err := ad.GetGroupMembers(ctx, base64.URLEncoding.EncodeToString([]byte("CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")))
 	assert.NotNil(t, users)
 	assert.Nil(t, err)
 }
@@ -135,6 +136,6 @@ func TestDeleteGroup(t *testing.T) {
 	err := ad.connect(ctx)
 	assert.Nil(t, err)
 
-	err = ad.DeleteGroup(ctx, "CN=TestGroup,CN=USERS,DC=INT,DC=ARKLOUDDEMO,DC=US")
+	err = ad.DeleteGroup(ctx, base64.URLEncoding.EncodeToString([]byte("CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")))
 	assert.Nil(t, err)
 }
