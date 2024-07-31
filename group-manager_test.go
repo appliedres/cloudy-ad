@@ -57,6 +57,22 @@ func TestGetGroup(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestListGroups(t *testing.T) {
+	cfg := initGroupManager()
+	assert.NotNil(t, cfg)
+
+	ad := NewAdGroupManager(cfg)
+	assert.NotNil(t, ad)
+
+	ctx := cloudy.StartContext()
+	err := ad.connect(ctx)
+	assert.Nil(t, err)
+
+	grp, err := ad.ListGroups(ctx, "", nil)
+	assert.NotNil(t, grp)
+	assert.Nil(t, err)
+}
+
 func TestGetGroupId(t *testing.T) {
 	cfg := initGroupManager()
 	assert.NotNil(t, cfg)

@@ -37,6 +37,17 @@ func TestGetUser(t *testing.T) {
 	assert.NotNil(t, user)
 }
 
+func TestListUsers(t *testing.T) {
+	ad, ctx, err := initUserManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	users, err := ad.ListUsers(ctx, "", nil)
+	assert.Nil(t, err)
+	assert.NotNil(t, users)
+}
+
 func TestGetUserByUserName(t *testing.T) {
 	ad, ctx, err := initUserManager()
 	assert.Nil(t, err)

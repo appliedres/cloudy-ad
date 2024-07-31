@@ -38,14 +38,16 @@ const EMAIL_TYPE = "mail"
 const LAST_LOGIN_TYPE = "lastLogon"
 const USER_ACCOUNT_CONTROL_TYPE = "userAccountControl"
 const USERNAME_TYPE = "name"
-const GROUP_NAME_TYPE = "name"
 const ACCT_EXPIRES_TYPE = "accountExpires"
 const OBJ_CLASS_TYPE = "objectClass"
 const INSTANCE_TYPE = "instanceType"
 const SAM_ACCT_NAME_TYPE = "sAMAccountName"
+
+const GROUP_NAME_TYPE = "name"
 const GROUP_TYPE = "groupType"
 
 var USER_OBJ_CLASS_VALS = []string{"top", "organizationalPerson", "user", "person"}
 var GROUP_OBJ_CLASS_VALS = []string{"top", "group"}
 
-var USER_STANDARD_ATTRS = []string{FIRST_NAME_TYPE, LAST_NAME_TYPE, EMAIL_TYPE, DISPLAY_NAME_TYPE, LAST_LOGIN_TYPE}
+var USER_STANDARD_ATTRS = []string{FIRST_NAME_TYPE, LAST_NAME_TYPE, EMAIL_TYPE, DISPLAY_NAME_TYPE, LAST_LOGIN_TYPE, USERNAME_TYPE}
+var GROUP_STANDARD_ATTRS = []string{GROUP_NAME_TYPE, GROUP_TYPE}
