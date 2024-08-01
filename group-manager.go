@@ -44,10 +44,13 @@ func NewAdGroupManager(cfg *AdGroupManager) *AdGroupManager {
 		InsecureTLS: cfg.insecureTLS,
 		SearchBase:  cfg.base,
 		Users: &adc.UsersConfigs{
-			SearchBase: fmt.Sprintf("CN=Users,%v", cfg.base),
+			SearchBase:  fmt.Sprintf("CN=Users,%v", cfg.base),
+			IdAttribute: USERNAME_TYPE,
+			Attributes:  USER_STANDARD_ATTRS,
 		},
 		Groups: &adc.GroupsConfigs{
 			SearchBase: fmt.Sprintf("CN=Users,%v", cfg.base),
+			Attributes: GROUP_STANDARD_ATTRS,
 		},
 		Bind: &adc.BindAccount{
 			DN:       cfg.user,
@@ -76,8 +79,22 @@ func (gm *AdGroupManager) connect(ctx context.Context) error {
 	return gm.client.Connect()
 }
 
-func (gm *AdGroupManager) ListGroups(ctx context.Context) ([]*models.Group, error) {
-	return nil, nil
+func (gm *AdGroupManager) ListGroups(ctx context.Context, filter string, attrs []string) (*[]models.Group, error) {
+	var args adc.GetGroupArgs
+	args.Attributes = append(attrs, USER_STANDARD_ATTRS...)
+	grps, err := gm.client.ListGroups(args, filter)
+	if err != nil {
+		return nil, err
+	}
+	if grps == nil {
+		return nil, nil
+	}
+
+	var results []models.Group
+	for _, grp := range *grps {
+		results = append(results, *groupAttributesToCloudy(&grp))
+	}
+	return &results, nil
 }
 
 // Get a specific group by id

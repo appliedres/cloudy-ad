@@ -57,10 +57,13 @@ func NewAdUserManager(cfg *AdUserManager) *AdUserManager {
 		InsecureTLS: cfg.insecureTLS,
 		SearchBase:  cfg.base,
 		Users: &adc.UsersConfigs{
-			SearchBase: fmt.Sprintf("CN=Users,%v", cfg.base),
+			SearchBase:  fmt.Sprintf("CN=Users,%v", cfg.base),
+			IdAttribute: USERNAME_TYPE,
+			Attributes:  USER_STANDARD_ATTRS,
 		},
 		Groups: &adc.GroupsConfigs{
 			SearchBase: fmt.Sprintf("CN=Users,%v", cfg.base),
+			Attributes: GROUP_STANDARD_ATTRS,
 		},
 		Bind: &adc.BindAccount{
 			DN:       cfg.user,
@@ -96,19 +99,32 @@ func (um *AdUserManager) connect(ctx context.Context) error {
 // Then it checks to see if it is a real user
 // Returns: string - updated user name, bool - if the user exists, error - if an error is encountered
 func (um *AdUserManager) ForceUserName(ctx context.Context, name string) (string, bool, error) {
+	usr, err := um.GetUserByUserName(ctx, name)
+	if err != nil {
+		return name, false, err
+	}
+	if usr != nil {
+		return name, true, nil
+	}
 	return name, false, nil
 }
 
-func (um *AdUserManager) ListUsers(ctx context.Context, page interface{}, filter interface{}) ([]*models.User, interface{}, error) {
-	return nil, nil, nil
-}
+func (um *AdUserManager) ListUsers(ctx context.Context, filter string, attrs []string) (*[]models.User, error) {
+	var args adc.GetUserArgs
+	args.Attributes = append(attrs, USER_STANDARD_ATTRS...)
+	users, err := um.client.ListUsers(args, filter)
+	if err != nil {
+		return nil, err
+	}
+	if users == nil {
+		return nil, nil
+	}
 
-func (um *AdUserManager) ListUserPage(ctx context.Context, page *PageRequest) ([]*models.User, *PageRequest, error) {
-	var nextPage *PageRequest
-	var err error
-	var rtn []*models.User
-
-	return rtn, nextPage, err
+	var results []models.User
+	for _, user := range *users {
+		results = append(results, *UserToCloudy(&user, nil))
+	}
+	return &results, nil
 }
 
 // Retrieves a specific user.
@@ -159,8 +175,7 @@ func (um *AdUserManager) GetUserWithAttributes(ctx context.Context, uid string, 
 // Retrieves a specific user.
 func (um *AdUserManager) GetUserByEmail(ctx context.Context, email string, opts *cloudy.UserOptions) (*models.User, error) {
 	user, err := um.client.GetUser(adc.GetUserArgs{
-		Filter:     "(&(objectclass=person)(mail=" + email + "))",
-		Attributes: USER_STANDARD_ATTRS,
+		Filter: "(&(objectclass=person)(mail=" + email + "))",
 	})
 	if err != nil {
 		return nil, err
