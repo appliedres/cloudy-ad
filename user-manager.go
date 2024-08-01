@@ -226,6 +226,9 @@ func (um *AdUserManager) DeleteUser(ctx context.Context, uid string) error {
 }
 
 func UserToCloudy(user *adc.User, opts *cloudy.UserOptions) *models.User {
+	uac, _ := strconv.Atoi(user.GetStringAttribute(USER_ACCOUNT_CONTROL_TYPE))
+	enabled := (uac & AC_ACCOUNTDISABLE) == 0
+	// locked := (uac & AC_LOCKOUT) == 0
 	u := &models.User{
 		UID:         base64.URLEncoding.EncodeToString([]byte(user.DN)),
 		Username:    user.Id,
@@ -233,6 +236,7 @@ func UserToCloudy(user *adc.User, opts *cloudy.UserOptions) *models.User {
 		LastName:    user.GetStringAttribute(LAST_NAME_TYPE),
 		Email:       user.GetStringAttribute(EMAIL_TYPE),
 		DisplayName: user.GetStringAttribute(DISPLAY_NAME_TYPE),
+		Enabled:     enabled,
 	}
 
 	if opts != nil && *opts.IncludeLastSignIn {
@@ -244,10 +248,6 @@ func UserToCloudy(user *adc.User, opts *cloudy.UserOptions) *models.User {
 			u.Attributes[LAST_LOGIN_TYPE] = time.Unix((lastLogon/10000000)-11644473600, 0).String()
 		}
 	}
-	// uacString := user.GetStringAttribute(USER_ACCOUNT_CONTROL_TYPE)
-	// uac, _ := strconv.Atoi(uacString)
-	// enabled := (uac & AC_LOCKOUT) == 0
-
 	return u
 }
 

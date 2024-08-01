@@ -8,7 +8,7 @@ go 1.22.1
 
 require (
 	github.com/appliedres/adc v0.0.3
-	github.com/appliedres/cloudy v0.0.32
+	github.com/appliedres/cloudy v0.0.33
 	github.com/go-ldap/ldap/v3 v3.4.8
 	github.com/stretchr/testify v1.9.0
 )
