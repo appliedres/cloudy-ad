@@ -11,12 +11,12 @@ import (
 )
 
 func initUserManager() (*AdUserManager, context.Context, error) {
-	cfg := &AdUserManager{
-		address:     "ldaps://localhost:636",
-		user:        "DEV-AD\\Administrator",
-		pwd:         "admin123!",
-		base:        "DC=ldap,DC=schneide,DC=dev",
-		insecureTLS: true,
+	cfg := &AdUserManagerConfig{
+		Address:     "ldaps://localhost:636",
+		User:        "DEV-AD\\Administrator",
+		Pwd:         "admin123!",
+		Base:        "DC=ldap,DC=schneide,DC=dev",
+		InsecureTLS: true,
 	}
 
 	ad := NewAdUserManager(cfg)

@@ -20,7 +20,6 @@ type PageRequest struct {
 	Max   int
 }
 
-// FACTORY
 const ActiveDirectory = "active-directory"
 const PageSize = 100
 
@@ -30,6 +29,7 @@ func init() {
 
 type AdUserManagerFactory struct{}
 
+// FACTORY
 func (umf *AdUserManagerFactory) Create(cfg interface{}) (cloudy.UserManager, error) {
 	return cfg.(*AdUserManager), nil
 }
@@ -39,41 +39,49 @@ func (umf *AdUserManagerFactory) FromEnv(env *cloudy.Environment) (interface{}, 
 	return cfg, nil
 }
 
-/// ------------- USER MANAGER
-
-type AdUserManager struct {
-	address     string
-	user        string
-	pwd         string
-	base        string
-	insecureTLS bool
-	client      *adc.Client
+type AdUserManagerConfig struct {
+	Address     string
+	User        string
+	Pwd         string
+	Base        string
+	InsecureTLS bool
 }
 
-func NewAdUserManager(cfg *AdUserManager) *AdUserManager {
+// USER MANAGER
+type AdUserManager struct {
+	cfg    AdUserManagerConfig
+	client *adc.Client
+}
+
+func NewAdUserManager(cfg *AdUserManagerConfig) *AdUserManager {
 	cl := adc.New(&adc.Config{
-		URL:         cfg.address,
-		InsecureTLS: cfg.insecureTLS,
-		SearchBase:  cfg.base,
+		URL:         cfg.Address,
+		InsecureTLS: cfg.InsecureTLS,
+		SearchBase:  cfg.Base,
 		Users: &adc.UsersConfigs{
-			SearchBase:  fmt.Sprintf("CN=Users,%v", cfg.base),
+			SearchBase:  fmt.Sprintf("CN=Users,%v", cfg.Base),
 			IdAttribute: USERNAME_TYPE,
 			Attributes:  USER_STANDARD_ATTRS,
 		},
 		Groups: &adc.GroupsConfigs{
-			SearchBase: fmt.Sprintf("CN=Users,%v", cfg.base),
+			SearchBase: fmt.Sprintf("CN=Users,%v", cfg.Base),
 			Attributes: GROUP_STANDARD_ATTRS,
 		},
 		Bind: &adc.BindAccount{
-			DN:       cfg.user,
-			Password: cfg.pwd,
+			DN:       cfg.User,
+			Password: cfg.Pwd,
 		},
 	})
 
-	cfg.client = cl
+	ad := &AdUserManager{
+		client: cl,
+		cfg:    *cfg,
+	}
+
+	ad.client = cl
 	cl.Config.AppendUsesAttributes(DISPLAY_NAME_TYPE)
 
-	return cfg
+	return ad
 }
 
 func NewAdUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdUserManager {
@@ -82,12 +90,12 @@ func NewAdUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdUs
 		insecureTls = false
 	}
 
-	cfg := &AdUserManager{
-		address:     env.Force("AD_HOST"),
-		user:        env.Force("AD_USER"),
-		pwd:         env.Force("AD_PWD"),
-		base:        env.Force("AD_BASE"),
-		insecureTLS: insecureTls,
+	cfg := &AdUserManagerConfig{
+		Address:     env.Force("AD_HOST"),
+		User:        env.Force("AD_USER"),
+		Pwd:         env.Force("AD_PWD"),
+		Base:        env.Force("AD_BASE"),
+		InsecureTLS: insecureTls,
 	}
 	return NewAdUserManager(cfg)
 }
