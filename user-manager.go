@@ -48,7 +48,6 @@ type AdUserManager struct {
 	base        string
 	insecureTLS bool
 	client      *adc.Client
-	UserCN      string
 }
 
 func NewAdUserManager(cfg *AdUserManager) *AdUserManager {
@@ -78,12 +77,17 @@ func NewAdUserManager(cfg *AdUserManager) *AdUserManager {
 }
 
 func NewAdUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdUserManager {
+	insecureTls, err := strconv.ParseBool(env.Get("AD_INSECURE_TLS"))
+	if err != nil {
+		insecureTls = false
+	}
+
 	cfg := &AdUserManager{
 		address:     env.Force("AD_HOST"),
 		user:        env.Force("AD_USER"),
 		pwd:         env.Force("AD_PWD"),
 		base:        env.Force("AD_BASE"),
-		insecureTLS: false,
+		insecureTLS: insecureTls,
 	}
 	return NewAdUserManager(cfg)
 }
@@ -249,62 +253,6 @@ func UserToCloudy(user *adc.User, opts *cloudy.UserOptions) *models.User {
 		}
 	}
 	return u
-}
-
-func UserToKeycloak(u *models.User) *adc.User {
-	// attr := make(map[string][]string)
-
-	// if u.AccountType != "" {
-	// 	attr["AccountType"] = []string{u.AccountType}
-	// }
-	// if u.Citizenship != "" {
-	// 	attr["Citizenship"] = []string{u.Citizenship}
-	// }
-	// if u.Company != "" {
-	// 	attr["Company"] = []string{u.Company}
-	// }
-	// if u.ContractDate != "" {
-	// 	attr["ContractDate"] = []string{u.ContractDate}
-	// }
-	// if u.ContractNumber != "" {
-	// 	attr["ContractNumber"] = []string{u.ContractNumber}
-	// }
-	// if u.Department != "" {
-	// 	attr["Department"] = []string{u.Department}
-	// }
-	// if u.DisplayName != "" {
-	// 	attr["DisplayName"] = []string{u.DisplayName}
-	// }
-	// if u.MobilePhone != "" {
-	// 	attr["MobilePhone"] = []string{u.MobilePhone}
-	// }
-	// if u.OfficePhone != "" {
-	// 	attr["OfficePhone"] = []string{u.OfficePhone}
-	// }
-	// if u.Organization != "" {
-	// 	attr["Organization"] = []string{u.Organization}
-	// }
-	// if u.JobTitle != "" {
-	// 	attr["JobTitle"] = []string{u.JobTitle}
-	// }
-	// if u.ProgramRole != "" {
-	// 	attr["ProgramRole"] = []string{u.ProgramRole}
-	// }
-	// if u.Project != "" {
-	// 	attr["Project"] = []string{u.Project}
-	// }
-
-	// // user := &gocloak.User{
-	// // 	ID:         &u.ID,
-	// // 	Username:   &u.UPN,
-	// // 	Enabled:    &u.Enabled,
-	// // 	FirstName:  &u.FirstName,
-	// // 	LastName:   &u.LastName,
-	// // 	Email:      &u.Email,
-	// // 	Attributes: &attr,
-	// // }
-
-	return nil
 }
 
 func createUserName(usr *models.User) string {
