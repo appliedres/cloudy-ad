@@ -107,6 +107,22 @@ func (um *AdUserManager) connect(ctx context.Context) error {
 	return err
 }
 
+func (um *AdUserManager) reconnect(ctx context.Context) error {
+	err := um.client.Reconnect(ctx, TICKER_DURATION, MAX_ATTEMPTS)
+
+	return err
+}
+
+func (um *AdUserManager) connectAsNeeded(ctx context.Context) error {
+	var err error
+	if um.client.ConnectedStatus() == false {
+		err = um.connect(ctx)
+	} else {
+		err = um.reconnect(ctx)
+	}
+	return err
+}
+
 // ForceUserName takes a proposed user name, validates it and transforms it.
 // Then it checks to see if it is a real user
 // Returns: string - updated user name, bool - if the user exists, error - if an error is encountered
@@ -123,6 +139,12 @@ func (um *AdUserManager) ForceUserName(ctx context.Context, name string) (string
 
 func (um *AdUserManager) ListUsers(ctx context.Context, filter string, attrs []string) (*[]models.User, error) {
 	var args adc.GetUserArgs
+
+	err := um.connectAsNeeded(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	args.Attributes = append(attrs, USER_STANDARD_ATTRS...)
 	users, err := um.client.ListUsers(args, filter)
 	if err != nil {
@@ -141,6 +163,11 @@ func (um *AdUserManager) ListUsers(ctx context.Context, filter string, attrs []s
 
 // Retrieves a specific user.
 func (um *AdUserManager) GetUser(ctx context.Context, uid string) (*models.User, error) {
+	err := um.connectAsNeeded(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	user, err := um.client.GetUser(adc.GetUserArgs{
 		Dn: decodeToStr(uid),
 	})
@@ -156,6 +183,11 @@ func (um *AdUserManager) GetUser(ctx context.Context, uid string) (*models.User,
 
 // not adding to Cloudy unless needed
 func (um *AdUserManager) GetUserByUserName(ctx context.Context, un string) (*models.User, error) {
+	err := um.connectAsNeeded(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	user, err := um.client.GetUser(adc.GetUserArgs{
 		Id: un,
 	})
@@ -170,6 +202,11 @@ func (um *AdUserManager) GetUserByUserName(ctx context.Context, un string) (*mod
 }
 
 func (um *AdUserManager) GetUserWithAttributes(ctx context.Context, uid string, attrs []string) (*models.User, error) {
+	err := um.connectAsNeeded(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	user, err := um.client.GetUser(adc.GetUserArgs{
 		Dn:         decodeToStr(uid),
 		Attributes: append(attrs, USER_STANDARD_ATTRS...),
@@ -186,6 +223,11 @@ func (um *AdUserManager) GetUserWithAttributes(ctx context.Context, uid string, 
 
 // Retrieves a specific user.
 func (um *AdUserManager) GetUserByEmail(ctx context.Context, email string, opts *cloudy.UserOptions) (*models.User, error) {
+	err := um.connectAsNeeded(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	user, err := um.client.GetUser(adc.GetUserArgs{
 		Filter: "(&(objectclass=person)(mail=" + email + "))",
 	})
@@ -202,9 +244,14 @@ func (um *AdUserManager) GetUserByEmail(ctx context.Context, email string, opts 
 // NewUser creates a new user with the given information and returns the new user with any additional
 // fields populated
 func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*models.User, error) {
+	err := um.connectAsNeeded(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	newUser.Username = createUserName(newUser)
 	newUser.UID = "CN=" + newUser.Username + "," + um.client.Config.Groups.SearchBase
-	err := um.client.CreateUser(newUser.UID, *cloudyToUserAttributes(newUser))
+	err = um.client.CreateUser(newUser.UID, *cloudyToUserAttributes(newUser))
 	return newUser, err
 }
 
@@ -217,6 +264,11 @@ func (um *AdUserManager) UpdateUser(ctx context.Context, usr *models.User) error
 }
 
 func (um *AdUserManager) Enable(ctx context.Context, uid string) error {
+	err := um.connectAsNeeded(ctx)
+	if err != nil {
+		return err
+	}
+
 	userAccountControl := ldap.Attribute{
 		Type: USER_ACCOUNT_CONTROL_TYPE,
 		Vals: []string{fmt.Sprintf("%d", AC_NORMAL_ACCOUNT)},
@@ -226,6 +278,11 @@ func (um *AdUserManager) Enable(ctx context.Context, uid string) error {
 }
 
 func (um *AdUserManager) Disable(ctx context.Context, uid string) error {
+	err := um.connectAsNeeded(ctx)
+	if err != nil {
+		return err
+	}
+
 	userAccountControl := ldap.Attribute{
 		Type: USER_ACCOUNT_CONTROL_TYPE,
 		Vals: []string{fmt.Sprintf("%d", AC_NORMAL_ACCOUNT|AC_ACCOUNTDISABLE)},
@@ -234,6 +291,11 @@ func (um *AdUserManager) Disable(ctx context.Context, uid string) error {
 }
 
 func (um *AdUserManager) DeleteUser(ctx context.Context, uid string) error {
+	err := um.connectAsNeeded(ctx)
+	if err != nil {
+		return err
+	}
+
 	return um.client.DeleteUser(decodeToStr(uid))
 }
 
