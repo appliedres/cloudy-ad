@@ -31,6 +31,10 @@ const (
 	ADS_GROUP_TYPE_SECURITY_ENABLED   = 0x80000000 // Specifies a group that is security enabled. This group can be used to apply an access-control list on an ADSI object or a file system.
 )
 
+// 0 means use default in client
+const TICKER_DURATION = 0
+const MAX_ATTEMPTS = 0
+
 const DISPLAY_NAME_TYPE = "displayName"
 const FIRST_NAME_TYPE = "givenName"
 const LAST_NAME_TYPE = "sn"
@@ -45,9 +49,10 @@ const SAM_ACCT_NAME_TYPE = "sAMAccountName"
 
 const GROUP_NAME_TYPE = "name"
 const GROUP_TYPE = "groupType"
+const GROUP_COMMON_NAME = "cn"
 
 var USER_OBJ_CLASS_VALS = []string{"top", "organizationalPerson", "user", "person"}
 var GROUP_OBJ_CLASS_VALS = []string{"top", "group"}
 
 var USER_STANDARD_ATTRS = []string{FIRST_NAME_TYPE, LAST_NAME_TYPE, EMAIL_TYPE, DISPLAY_NAME_TYPE, LAST_LOGIN_TYPE, USERNAME_TYPE, USER_ACCOUNT_CONTROL_TYPE}
-var GROUP_STANDARD_ATTRS = []string{GROUP_NAME_TYPE, GROUP_TYPE}
+var GROUP_STANDARD_ATTRS = []string{GROUP_NAME_TYPE, GROUP_TYPE, GROUP_COMMON_NAME}

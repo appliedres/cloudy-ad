@@ -21,6 +21,19 @@ func initGroupManager() *AdGroupManager {
 
 }
 
+func TestGetGroupNoExplicitConnect(t *testing.T) {
+	cfg := initGroupManager()
+	assert.NotNil(t, cfg)
+
+	ad := NewAdGroupManager(cfg)
+	assert.NotNil(t, ad)
+
+	ctx := cloudy.StartContext()
+	grp, err := ad.GetGroup(ctx, base64.URLEncoding.EncodeToString([]byte("CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	assert.NotNil(t, grp)
+	assert.Nil(t, err)
+}
+
 func TestCreateGroup(t *testing.T) {
 	cfg := initGroupManager()
 	assert.NotNil(t, cfg)

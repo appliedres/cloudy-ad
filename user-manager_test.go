@@ -26,6 +26,24 @@ func initUserManager() (*AdUserManager, context.Context, error) {
 	return ad, ctx, err
 }
 
+func TestGetUserNoExplicitConnect(t *testing.T) {
+	cfg := &AdUserManagerConfig{
+		Address:     "ldaps://localhost:636",
+		User:        "DEV-AD\\Administrator",
+		Pwd:         "admin123!",
+		Base:        "DC=ldap,DC=schneide,DC=dev",
+		InsecureTLS: true,
+	}
+
+	ad := NewAdUserManager(cfg)
+	ctx := cloudy.StartContext()
+
+	user, err := ad.GetUser(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	assert.Nil(t, err)
+	assert.NotNil(t, user)
+
+}
+
 func TestGetUser(t *testing.T) {
 	ad, ctx, err := initUserManager()
 	assert.Nil(t, err)

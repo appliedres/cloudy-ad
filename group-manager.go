@@ -79,9 +79,31 @@ func (gm *AdGroupManager) connect(ctx context.Context) error {
 	return gm.client.Connect()
 }
 
+func (um *AdGroupManager) reconnect(ctx context.Context) error {
+	err := um.client.Reconnect(ctx, TICKER_DURATION, MAX_ATTEMPTS)
+
+	return err
+}
+
+func (um *AdGroupManager) connectAsNeeded(ctx context.Context) error {
+	var err error
+	if um.client.ConnectedStatus() == false {
+		err = um.connect(ctx)
+	} else {
+		err = um.reconnect(ctx)
+	}
+	return err
+}
+
 func (gm *AdGroupManager) ListGroups(ctx context.Context, filter string, attrs []string) (*[]models.Group, error) {
 	var args adc.GetGroupArgs
-	args.Attributes = append(attrs, USER_STANDARD_ATTRS...)
+
+	err := gm.connectAsNeeded(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	args.Attributes = append(attrs, GROUP_STANDARD_ATTRS...)
 	grps, err := gm.client.ListGroups(args, filter)
 	if err != nil {
 		return nil, err
@@ -99,6 +121,11 @@ func (gm *AdGroupManager) ListGroups(ctx context.Context, filter string, attrs [
 
 // Get a specific group by id
 func (gm *AdGroupManager) GetGroup(ctx context.Context, id string) (*models.Group, error) {
+	err := gm.connectAsNeeded(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	grp, err := gm.client.GetGroup(adc.GetGroupArgs{
 		Dn: decodeToStr(id),
 	})
@@ -114,6 +141,11 @@ func (gm *AdGroupManager) GetGroup(ctx context.Context, id string) (*models.Grou
 
 // Get a group id from name
 func (gm *AdGroupManager) GetGroupId(ctx context.Context, name string) (string, error) {
+	err := gm.connectAsNeeded(ctx)
+	if err != nil {
+		return "", err
+	}
+
 	args := adc.GetGroupArgs{
 		Id: name,
 	}
@@ -123,25 +155,45 @@ func (gm *AdGroupManager) GetGroupId(ctx context.Context, name string) (string, 
 
 // Get all the groups for a single user
 func (gm *AdGroupManager) GetUserGroups(ctx context.Context, uid string) ([]*models.Group, error) {
+	err := gm.connectAsNeeded(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }
 
 // Create a new Group
 func (gm *AdGroupManager) NewGroup(ctx context.Context, grp *models.Group) (*models.Group, error) {
+	err := gm.connectAsNeeded(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	grp.ID = "CN=" + grp.Name + "," + gm.client.Config.Groups.SearchBase
-	err := gm.client.CreateGroup(grp.ID, *cloudyToGroupAttributes(grp))
+	err = gm.client.CreateGroup(grp.ID, *cloudyToGroupAttributes(grp))
 	grp.ID = base64.URLEncoding.EncodeToString([]byte(grp.ID))
 	return grp, err
 }
 
 // Update a group. This is generally just the name of the group.
 func (gm *AdGroupManager) UpdateGroup(ctx context.Context, grp *models.Group) (bool, error) {
+	err := gm.connectAsNeeded(ctx)
+	if err != nil {
+		return false, err
+	}
+
 	return true, nil
 }
 
 // Get all the members of a group. This returns partial users only,
 // typically just the user id, name and email fields
 func (gm *AdGroupManager) GetGroupMembers(ctx context.Context, grpId string) ([]*models.User, error) {
+	err := gm.connectAsNeeded(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	grp, err := gm.client.GetGroup(adc.GetGroupArgs{
 		Dn: decodeToStr(grpId),
 	})
@@ -164,25 +216,45 @@ func (gm *AdGroupManager) GetGroupMembers(ctx context.Context, grpId string) ([]
 
 // Remove members from a group
 func (gm *AdGroupManager) RemoveMembers(ctx context.Context, groupName string, userNames []string) error {
-	_, err := gm.client.DeleteGroupMembers(groupName, userNames...)
+	err := gm.connectAsNeeded(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = gm.client.DeleteGroupMembers(groupName, userNames...)
 	return err
 }
 
 // Add member(s) to a group
 func (gm *AdGroupManager) AddMembers(ctx context.Context, groupName string, userNames []string) error {
-	_, err := gm.client.AddGroupMembers(groupName, userNames...)
+	err := gm.connectAsNeeded(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = gm.client.AddGroupMembers(groupName, userNames...)
 	return err
 }
 
 func (gm *AdGroupManager) DeleteGroup(ctx context.Context, groupId string) error {
+	err := gm.connectAsNeeded(ctx)
+	if err != nil {
+		return err
+	}
+
 	return gm.client.DeleteGroup(decodeToStr(groupId))
 }
 
 func groupAttributesToCloudy(adc *adc.Group) *models.Group {
 	grp := &models.Group{
-		ID:   base64.URLEncoding.EncodeToString([]byte(adc.DN)),
-		Name: adc.Id,
+		ID: base64.URLEncoding.EncodeToString([]byte(adc.DN)),
 	}
+
+	val, ok := adc.Attributes[GROUP_NAME_TYPE]
+	if ok {
+		grp.Name = fmt.Sprintf("%v", val)
+	}
+
 	return grp
 }
 
