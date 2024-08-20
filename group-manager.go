@@ -160,7 +160,34 @@ func (gm *AdGroupManager) GetUserGroups(ctx context.Context, uid string) ([]*mod
 		return nil, err
 	}
 
-	return nil, nil
+	user, err := gm.client.GetUser(adc.GetUserArgs{
+		Dn:               decodeToStr(uid),
+		SkipGroupsSearch: false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, nil
+	}
+
+	var groups []*models.Group
+	for _, group := range user.Groups {
+		grp, err := gm.client.GetGroup(adc.GetGroupArgs{
+			Dn: decodeToStr(group.DN),
+			Id: group.Id,
+		})
+		if err != nil {
+			continue
+		}
+		if grp == nil {
+			continue
+		}
+
+		groups = append(groups, groupAttributesToCloudy(grp))
+	}
+
+	return groups, nil
 }
 
 // Create a new Group
@@ -255,6 +282,7 @@ func groupAttributesToCloudy(adc *adc.Group) *models.Group {
 		grp.Name = fmt.Sprintf("%v", val)
 	}
 
+	grp.Source = GROUP_SOURCE
 	return grp
 }
 

@@ -34,6 +34,19 @@ func TestGetGroupNoExplicitConnect(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestGetGroupsByUser(t *testing.T) {
+	cfg := initGroupManager()
+	assert.NotNil(t, cfg)
+
+	ad := NewAdGroupManager(cfg)
+	assert.NotNil(t, ad)
+
+	ctx := cloudy.StartContext()
+	grps, err := ad.GetUserGroups(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	assert.NotNil(t, grps)
+	assert.Nil(t, err)
+}
+
 func TestCreateGroup(t *testing.T) {
 	cfg := initGroupManager()
 	assert.NotNil(t, cfg)
