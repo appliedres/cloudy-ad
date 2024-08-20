@@ -50,6 +50,7 @@ const SAM_ACCT_NAME_TYPE = "sAMAccountName"
 const GROUP_NAME_TYPE = "name"
 const GROUP_TYPE = "groupType"
 const GROUP_COMMON_NAME = "cn"
+const GROUP_SOURCE = "Active Directory"
 
 var USER_OBJ_CLASS_VALS = []string{"top", "organizationalPerson", "user", "person"}
 var GROUP_OBJ_CLASS_VALS = []string{"top", "group"}
