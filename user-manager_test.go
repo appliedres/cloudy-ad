@@ -16,7 +16,7 @@ func initUserManager() (*AdUserManager, context.Context, error) {
 		User:        "DEV-AD\\Administrator",
 		Pwd:         "admin123!",
 		Base:        "DC=ldap,DC=schneide,DC=dev",
-		InsecureTLS: true,
+		InsecureTLS: "true",
 	}
 
 	ad := NewAdUserManager(cfg)
@@ -32,7 +32,7 @@ func TestGetUserNoExplicitConnect(t *testing.T) {
 		User:        "DEV-AD\\Administrator",
 		Pwd:         "admin123!",
 		Base:        "DC=ldap,DC=schneide,DC=dev",
-		InsecureTLS: true,
+		InsecureTLS: "true",
 	}
 
 	ad := NewAdUserManager(cfg)

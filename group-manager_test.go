@@ -9,20 +9,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func initGroupManager() *AdGroupManager {
-	cfg := &AdGroupManager{
-		address:     "ldaps://localhost:636",
-		user:        "DEV-AD\\Administrator",
-		pwd:         "admin123!",
-		base:        "DC=ldap,DC=schneide,DC=dev",
-		insecureTLS: true,
+func initGroupManagerConfig() *AdGroupManagerConfig {
+	cfg := &AdGroupManagerConfig{
+		Address:     "ldaps://localhost:636",
+		User:        "DEV-AD\\Administrator",
+		Pwd:         "admin123!",
+		Base:        "DC=ldap,DC=schneide,DC=dev",
+		InsecureTLS: "true",
 	}
 	return cfg
 
 }
 
 func TestGetGroupNoExplicitConnect(t *testing.T) {
-	cfg := initGroupManager()
+	cfg := initGroupManagerConfig()
 	assert.NotNil(t, cfg)
 
 	ad := NewAdGroupManager(cfg)
@@ -35,7 +35,7 @@ func TestGetGroupNoExplicitConnect(t *testing.T) {
 }
 
 func TestGetGroupsByUser(t *testing.T) {
-	cfg := initGroupManager()
+	cfg := initGroupManagerConfig()
 	assert.NotNil(t, cfg)
 
 	ad := NewAdGroupManager(cfg)
@@ -48,7 +48,7 @@ func TestGetGroupsByUser(t *testing.T) {
 }
 
 func TestCreateGroup(t *testing.T) {
-	cfg := initGroupManager()
+	cfg := initGroupManagerConfig()
 	assert.NotNil(t, cfg)
 
 	ad := NewAdGroupManager(cfg)
@@ -68,7 +68,7 @@ func TestCreateGroup(t *testing.T) {
 }
 
 func TestGetGroup(t *testing.T) {
-	cfg := initGroupManager()
+	cfg := initGroupManagerConfig()
 	assert.NotNil(t, cfg)
 
 	ad := NewAdGroupManager(cfg)
@@ -84,7 +84,7 @@ func TestGetGroup(t *testing.T) {
 }
 
 func TestListGroups(t *testing.T) {
-	cfg := initGroupManager()
+	cfg := initGroupManagerConfig()
 	assert.NotNil(t, cfg)
 
 	ad := NewAdGroupManager(cfg)
@@ -100,7 +100,7 @@ func TestListGroups(t *testing.T) {
 }
 
 func TestGetGroupId(t *testing.T) {
-	cfg := initGroupManager()
+	cfg := initGroupManagerConfig()
 	assert.NotNil(t, cfg)
 
 	ad := NewAdGroupManager(cfg)
@@ -116,7 +116,7 @@ func TestGetGroupId(t *testing.T) {
 }
 
 func TestAddGroupMembers(t *testing.T) {
-	cfg := initGroupManager()
+	cfg := initGroupManagerConfig()
 	assert.NotNil(t, cfg)
 
 	ad := NewAdGroupManager(cfg)
@@ -134,7 +134,7 @@ func TestAddGroupMembers(t *testing.T) {
 }
 
 func TestRemoveGroupMembers(t *testing.T) {
-	cfg := initGroupManager()
+	cfg := initGroupManagerConfig()
 	assert.NotNil(t, cfg)
 
 	ad := NewAdGroupManager(cfg)
@@ -152,7 +152,7 @@ func TestRemoveGroupMembers(t *testing.T) {
 }
 
 func TestGetGroupMembers(t *testing.T) {
-	cfg := initGroupManager()
+	cfg := initGroupManagerConfig()
 	assert.NotNil(t, cfg)
 
 	ad := NewAdGroupManager(cfg)
@@ -168,7 +168,7 @@ func TestGetGroupMembers(t *testing.T) {
 }
 
 func TestDeleteGroup(t *testing.T) {
-	cfg := initGroupManager()
+	cfg := initGroupManagerConfig()
 	assert.NotNil(t, cfg)
 
 	ad := NewAdGroupManager(cfg)

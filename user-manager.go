@@ -44,7 +44,7 @@ type AdUserManagerConfig struct {
 	User        string
 	Pwd         string
 	Base        string
-	InsecureTLS bool
+	InsecureTLS string
 }
 
 // USER MANAGER
@@ -54,9 +54,14 @@ type AdUserManager struct {
 }
 
 func NewAdUserManager(cfg *AdUserManagerConfig) *AdUserManager {
+	insecureTLS, err := strconv.ParseBool(cfg.InsecureTLS)
+	if err != nil {
+		insecureTLS = false
+	}
+
 	cl := adc.New(&adc.Config{
 		URL:         cfg.Address,
-		InsecureTLS: cfg.InsecureTLS,
+		InsecureTLS: insecureTLS,
 		SearchBase:  cfg.Base,
 		Users: &adc.UsersConfigs{
 			SearchBase:  fmt.Sprintf("CN=Users,%v", cfg.Base),
@@ -85,17 +90,12 @@ func NewAdUserManager(cfg *AdUserManagerConfig) *AdUserManager {
 }
 
 func NewAdUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdUserManager {
-	insecureTls, err := strconv.ParseBool(env.Get("AD_INSECURE_TLS"))
-	if err != nil {
-		insecureTls = false
-	}
-
 	cfg := &AdUserManagerConfig{
 		Address:     env.Force("AD_HOST"),
 		User:        env.Force("AD_USER"),
 		Pwd:         env.Force("AD_PWD"),
 		Base:        env.Force("AD_BASE"),
-		InsecureTLS: insecureTls,
+		InsecureTLS: env.Force("AD_INSECURE_TLS"),
 	}
 	return NewAdUserManager(cfg)
 }
@@ -249,7 +249,16 @@ func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*mo
 		return nil, err
 	}
 
-	newUser.Username = createUserName(newUser)
+	userName, userExists, err := um.ForceUserName(ctx, createUserName(newUser))
+	if err != nil {
+		return nil, err
+	}
+	if userExists {
+		return nil, fmt.Errorf("User already exists %v", userName)
+	} else {
+		newUser.Username = userName
+	}
+
 	newUser.UID = "CN=" + newUser.Username + "," + um.client.Config.Groups.SearchBase
 	err = um.client.CreateUser(newUser.UID, *cloudyToUserAttributes(newUser))
 	return newUser, err

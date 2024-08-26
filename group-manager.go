@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"strconv"
 
 	"github.com/appliedres/cloudy"
 	"github.com/appliedres/cloudy/models"
@@ -27,48 +28,60 @@ func (gmf *AdGroupManagerFactory) FromEnv(env *cloudy.Environment) (interface{},
 	return cfg, nil
 }
 
-/// ------------- GROUP MANAGER
-
-type AdGroupManager struct {
-	address     string
-	user        string
-	pwd         string
-	base        string
-	insecureTLS bool
-	client      *adc.Client
+type AdGroupManagerConfig struct {
+	Address     string
+	User        string
+	Pwd         string
+	Base        string
+	InsecureTLS string
 }
 
-func NewAdGroupManager(cfg *AdGroupManager) *AdGroupManager {
+type AdGroupManager struct {
+	cfg    AdGroupManagerConfig
+	client *adc.Client
+}
+
+func NewAdGroupManager(cfg *AdGroupManagerConfig) *AdGroupManager {
+	insecureTLS, err := strconv.ParseBool(cfg.InsecureTLS)
+	if err != nil {
+		insecureTLS = false
+	}
+
 	cl := adc.New(&adc.Config{
-		URL:         cfg.address,
-		InsecureTLS: cfg.insecureTLS,
-		SearchBase:  cfg.base,
+		URL:         cfg.Address,
+		InsecureTLS: insecureTLS,
+		SearchBase:  cfg.Base,
 		Users: &adc.UsersConfigs{
-			SearchBase:  fmt.Sprintf("CN=Users,%v", cfg.base),
+			SearchBase:  fmt.Sprintf("CN=Users,%v", cfg.Base),
 			IdAttribute: USERNAME_TYPE,
 			Attributes:  USER_STANDARD_ATTRS,
 		},
 		Groups: &adc.GroupsConfigs{
-			SearchBase: fmt.Sprintf("CN=Users,%v", cfg.base),
+			SearchBase: fmt.Sprintf("CN=Users,%v", cfg.Base),
 			Attributes: GROUP_STANDARD_ATTRS,
 		},
 		Bind: &adc.BindAccount{
-			DN:       cfg.user,
-			Password: cfg.pwd,
+			DN:       cfg.User,
+			Password: cfg.Pwd,
 		},
 	})
 
-	cfg.client = cl
-	return cfg
+	ad := &AdGroupManager{
+		client: cl,
+		cfg:    *cfg,
+	}
+
+	ad.client = cl
+	return ad
 }
 
 func NewAdGroupManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdGroupManager {
-	cfg := &AdGroupManager{
-		address:     env.Force("AD_HOST"),
-		user:        env.Force("AD_USER"),
-		pwd:         env.Force("AD_PWD"),
-		base:        env.Force("AD_BASE"),
-		insecureTLS: false,
+	cfg := &AdGroupManagerConfig{
+		Address:     env.Force("AD_HOST"),
+		User:        env.Force("AD_USER"),
+		Pwd:         env.Force("AD_PWD"),
+		Base:        env.Force("AD_BASE"),
+		InsecureTLS: env.Force("AD_INSECURE_TLS"),
 	}
 
 	return NewAdGroupManager(cfg)
