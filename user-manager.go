@@ -261,6 +261,11 @@ func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*mo
 
 	newUser.UID = "CN=" + newUser.Username + "," + um.client.Config.Groups.SearchBase
 	err = um.client.CreateUser(newUser.UID, *cloudyToUserAttributes(newUser))
+	if err != nil {
+		return nil, err
+	}
+
+	newUser.UID = base64.URLEncoding.EncodeToString([]byte(newUser.UID))
 	return newUser, err
 }
 
@@ -320,6 +325,15 @@ func UserToCloudy(user *adc.User, opts *cloudy.UserOptions) *models.User {
 		Email:       user.GetStringAttribute(EMAIL_TYPE),
 		DisplayName: user.GetStringAttribute(DISPLAY_NAME_TYPE),
 		Enabled:     enabled,
+	}
+
+	for k, v := range user.Attributes {
+		if !inStdAttrs(k) {
+			if u.Attributes == nil {
+				u.Attributes = make(map[string]string)
+			}
+			u.Attributes[k] = v.(string)
+		}
 	}
 
 	if opts != nil && *opts.IncludeLastSignIn {
@@ -383,6 +397,13 @@ func cloudyToUserAttributes(usr *models.User) *[]ldap.Attribute {
 		Vals: []string{fmt.Sprintf("%d", AC_ACCOUNT_NEVER_EXPIRES)},
 	})
 
+	for k, v := range usr.Attributes {
+		attrs = append(attrs, ldap.Attribute{
+			Type: k,
+			Vals: []string{v},
+		})
+	}
+
 	return &attrs
 }
 
@@ -434,4 +455,13 @@ func decodeToStr(encodedStr string) string {
 		return ("")
 	}
 	return (string(bytes))
+}
+
+func inStdAttrs(key string) bool {
+	for _, v := range USER_STANDARD_ATTRS {
+		if key == v {
+			return true
+		}
+	}
+	return false
 }
