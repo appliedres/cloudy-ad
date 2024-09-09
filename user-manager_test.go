@@ -11,13 +11,15 @@ import (
 )
 
 func initUserManager() (*AdUserManager, context.Context, error) {
-	cfg := &AdUserManagerConfig{
-		Address:     "ldaps://localhost:636",
-		User:        "DEV-AD\\Administrator",
-		Pwd:         "admin123!",
-		Base:        "DC=ldap,DC=schneide,DC=dev",
-		InsecureTLS: "true",
-	}
+	// cfg := &AdUserManagerConfig{
+	// 	Address:     "ldaps://localhost:636",
+	// 	User:        "DEV-AD\\Administrator",
+	// 	Pwd:         "admin123!",
+	// 	Base:        "DC=ldap,DC=schneide,DC=dev",
+	// 	InsecureTLS: "true",
+	// }
+
+	cfg := CreateADTestContainer()
 
 	ad := NewAdUserManager(cfg)
 	ctx := cloudy.StartContext()
