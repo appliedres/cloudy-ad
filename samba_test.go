@@ -17,7 +17,7 @@ func CreateADTestContainer() *AdUserManagerConfig {
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "dev-ad",
+			Image:        "appliedres/dev-ad",
 			ExposedPorts: []string{"636/tcp"},
 			Env: map[string]string{
 				"SMB_ADMIN_PASSWORD": "admin123!",

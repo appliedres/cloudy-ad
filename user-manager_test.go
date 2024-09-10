@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"testing"
+	"time"
 
 	"github.com/appliedres/cloudy"
 	"github.com/appliedres/cloudy/models"
@@ -11,14 +12,6 @@ import (
 )
 
 func initUserManager() (*AdUserManager, context.Context, error) {
-	// cfg := &AdUserManagerConfig{
-	// 	Address:     "ldaps://localhost:636",
-	// 	User:        "DEV-AD\\Administrator",
-	// 	Pwd:         "admin123!",
-	// 	Base:        "DC=ldap,DC=schneide,DC=dev",
-	// 	InsecureTLS: "true",
-	// }
-
 	cfg := CreateADTestContainer()
 
 	ad := NewAdUserManager(cfg)
@@ -28,81 +21,7 @@ func initUserManager() (*AdUserManager, context.Context, error) {
 	return ad, ctx, err
 }
 
-func TestGetUserNoExplicitConnect(t *testing.T) {
-	cfg := &AdUserManagerConfig{
-		Address:     "ldaps://localhost:636",
-		User:        "DEV-AD\\Administrator",
-		Pwd:         "admin123!",
-		Base:        "DC=ldap,DC=schneide,DC=dev",
-		InsecureTLS: "true",
-	}
-
-	ad := NewAdUserManager(cfg)
-	ctx := cloudy.StartContext()
-
-	user, err := ad.GetUser(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
-	assert.Nil(t, err)
-	assert.NotNil(t, user)
-
-}
-
-func TestGetUser(t *testing.T) {
-	ad, ctx, err := initUserManager()
-	assert.Nil(t, err)
-	assert.NotNil(t, ad)
-	assert.NotNil(t, ctx)
-
-	user, err := ad.GetUser(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
-	assert.Nil(t, err)
-	assert.NotNil(t, user)
-}
-
-func TestListUsers(t *testing.T) {
-	ad, ctx, err := initUserManager()
-	assert.Nil(t, err)
-	assert.NotNil(t, ad)
-	assert.NotNil(t, ctx)
-
-	users, err := ad.ListUsers(ctx, "", nil)
-	assert.Nil(t, err)
-	assert.NotNil(t, users)
-}
-
-func TestGetUserByUserName(t *testing.T) {
-	ad, ctx, err := initUserManager()
-	assert.Nil(t, err)
-	assert.NotNil(t, ad)
-	assert.NotNil(t, ctx)
-
-	user, err := ad.GetUserByUserName(ctx, "jane-doe")
-	assert.Nil(t, err)
-	assert.NotNil(t, user)
-}
-
-func TestGetUserByEmail(t *testing.T) {
-	ad, ctx, err := initUserManager()
-	assert.Nil(t, err)
-	assert.NotNil(t, ad)
-	assert.NotNil(t, ctx)
-
-	user, err := ad.GetUserByEmail(ctx, "jane.doe@us.af.mil", &cloudy.UserOptions{IncludeLastSignIn: cloudy.BoolP(true)})
-	assert.Nil(t, err)
-	assert.NotNil(t, user)
-}
-
-func TestGetUserWithAttributes(t *testing.T) {
-	ad, ctx, err := initUserManager()
-	assert.Nil(t, err)
-	assert.NotNil(t, ad)
-	assert.NotNil(t, ctx)
-
-	attrs := []string{"sAMAccountName", "telephoneNumber", "primaryGroupId"}
-	user, err := ad.GetUserWithAttributes(ctx, "jane.doe@us.af.mil", attrs)
-	assert.Nil(t, err)
-	assert.NotNil(t, user)
-}
-
-func TestCreateDisabledUser(t *testing.T) {
+func TestCloudyAD(t *testing.T) {
 	ad, ctx, err := initUserManager()
 	assert.Nil(t, err)
 	assert.NotNil(t, ad)
@@ -117,37 +36,30 @@ func TestCreateDisabledUser(t *testing.T) {
 	newUsr, err := ad.NewUser(ctx, usr)
 	assert.Nil(t, err)
 	assert.NotNil(t, newUsr)
-}
+	assert.Equal(t, newUsr.FirstName, "Jane")
+	assert.Equal(t, newUsr.Enabled, false)
 
-func TestEnableUser(t *testing.T) {
-	ad, ctx, err := initUserManager()
-	assert.Nil(t, err)
-	assert.NotNil(t, ad)
-	assert.NotNil(t, ctx)
+	time.Sleep(2 * time.Second)
 
 	err = ad.Enable(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
 	assert.Nil(t, err)
-}
 
-func TestDisableUser(t *testing.T) {
-	ad, ctx, err := initUserManager()
-	assert.Nil(t, err)
-	assert.NotNil(t, ad)
-	assert.NotNil(t, ctx)
+	time.Sleep(2 * time.Second)
 
-	err = ad.Disable(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	user, err := ad.GetUser(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
 	assert.Nil(t, err)
-}
+	assert.NotNil(t, user)
+	assert.Equal(t, user.FirstName, "Jane")
+	assert.Equal(t, user.Enabled, true)
 
-func TestUpdateUser(t *testing.T) {
-	ad, ctx, err := initUserManager()
+	user, err = ad.GetUserByEmail(ctx, "jane.doe@us.af.mil", &cloudy.UserOptions{IncludeLastSignIn: cloudy.BoolP(true)})
 	assert.Nil(t, err)
-	assert.NotNil(t, ad)
-	assert.NotNil(t, ctx)
+	assert.NotNil(t, user)
+	assert.Equal(t, user.FirstName, "Jane")
 
 	m := make(map[string]string)
 	m["telephoneNumber"] = "800-555-1212"
-	user := &models.User{
+	user = &models.User{
 		UID:         base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")),
 		Username:    "jane-doe",
 		FirstName:   "jane2",
@@ -158,14 +70,32 @@ func TestUpdateUser(t *testing.T) {
 	}
 	err = ad.UpdateUser(ctx, user)
 	assert.Nil(t, err)
-}
 
-func TestDeleteUser(t *testing.T) {
-	ad, ctx, err := initUserManager()
+	time.Sleep(2 * time.Second)
+
+	attrs := []string{"sAMAccountName", "telephoneNumber", "primaryGroupId"}
+	user, err = ad.GetUserWithAttributes(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")), attrs)
 	assert.Nil(t, err)
-	assert.NotNil(t, ad)
-	assert.NotNil(t, ctx)
+	assert.NotNil(t, user)
+	assert.Equal(t, user.FirstName, "jane2")
+	assert.Equal(t, user.Attributes["telephoneNumber"], "800-555-1212")
+
+	err = ad.Disable(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	assert.Nil(t, err)
+
+	time.Sleep(2 * time.Second)
+
+	user, err = ad.GetUserByUserName(ctx, "jane-doe")
+	assert.Nil(t, err)
+	assert.NotNil(t, user)
+	assert.Equal(t, user.FirstName, "jane2")
+	assert.Equal(t, user.Enabled, false)
+
+	users, err := ad.ListUsers(ctx, "", nil)
+	assert.Nil(t, err)
+	assert.NotNil(t, users)
 
 	err = ad.DeleteUser(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
 	assert.Nil(t, err)
+
 }
