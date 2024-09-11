@@ -92,6 +92,10 @@ func (gm *AdGroupManager) connect(ctx context.Context) error {
 	return gm.client.Connect()
 }
 
+func (gm *AdGroupManager) GroupDN(groupid string) string {
+	return fmt.Sprintf("CN=%v,%v", groupid, gm.client.Config.Groups.SearchBase)
+}
+
 func (um *AdGroupManager) reconnect(ctx context.Context) error {
 	err := um.client.Reconnect(ctx, TICKER_DURATION, MAX_ATTEMPTS)
 
@@ -140,7 +144,7 @@ func (gm *AdGroupManager) GetGroup(ctx context.Context, id string) (*models.Grou
 	}
 
 	grp, err := gm.client.GetGroup(adc.GetGroupArgs{
-		Dn: decodeToStr(id),
+		Dn: gm.GroupDN(id),
 	})
 	if err != nil {
 		return nil, err
@@ -174,7 +178,8 @@ func (gm *AdGroupManager) GetUserGroups(ctx context.Context, uid string) ([]*mod
 	}
 
 	user, err := gm.client.GetUser(adc.GetUserArgs{
-		Dn:               decodeToStr(uid),
+		// Dn:               decodeToStr(uid),
+		Id:               uid,
 		SkipGroupsSearch: false,
 	})
 	if err != nil {
@@ -187,7 +192,7 @@ func (gm *AdGroupManager) GetUserGroups(ctx context.Context, uid string) ([]*mod
 	var groups []*models.Group
 	for _, group := range user.Groups {
 		grp, err := gm.client.GetGroup(adc.GetGroupArgs{
-			Dn: decodeToStr(group.DN),
+			Dn: group.DN,
 			Id: group.Id,
 		})
 		if err != nil {
@@ -235,7 +240,7 @@ func (gm *AdGroupManager) GetGroupMembers(ctx context.Context, grpId string) ([]
 	}
 
 	grp, err := gm.client.GetGroup(adc.GetGroupArgs{
-		Dn: decodeToStr(grpId),
+		Dn: gm.GroupDN(grpId),
 	})
 	if err != nil {
 		return nil, err
@@ -282,12 +287,14 @@ func (gm *AdGroupManager) DeleteGroup(ctx context.Context, groupId string) error
 		return err
 	}
 
-	return gm.client.DeleteGroup(decodeToStr(groupId))
+	dn := gm.GroupDN(groupId)
+	return gm.client.DeleteGroup(dn)
 }
 
 func groupAttributesToCloudy(adc *adc.Group) *models.Group {
 	grp := &models.Group{
-		ID: base64.URLEncoding.EncodeToString([]byte(adc.DN)),
+		// ID: base64.URLEncoding.EncodeToString([]byte(adc.DN)),
+		ID: adc.DN,
 	}
 
 	val, ok := adc.Attributes[GROUP_NAME_TYPE]
