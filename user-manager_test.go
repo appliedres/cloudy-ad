@@ -2,7 +2,6 @@ package cloudyad
 
 import (
 	"context"
-	"encoding/base64"
 	"testing"
 	"time"
 
@@ -41,12 +40,12 @@ func TestCloudyADUserMgr(t *testing.T) {
 
 	time.Sleep(2 * time.Second)
 
-	err = ad.Enable(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	err = ad.Enable(ctx, "jane-doe")
 	assert.Nil(t, err)
 
 	time.Sleep(2 * time.Second)
 
-	user, err := ad.GetUser(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	user, err := ad.GetUser(ctx, "jane-doe")
 	assert.Nil(t, err)
 	assert.NotNil(t, user)
 	assert.Equal(t, user.FirstName, "Jane")
@@ -60,7 +59,7 @@ func TestCloudyADUserMgr(t *testing.T) {
 	m := make(map[string]string)
 	m["telephoneNumber"] = "800-555-1212"
 	user = &models.User{
-		UID:         base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")),
+		UID:         "jane-doe",
 		Username:    "jane-doe",
 		FirstName:   "jane2",
 		LastName:    "doe2",
@@ -74,13 +73,13 @@ func TestCloudyADUserMgr(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	attrs := []string{"sAMAccountName", "telephoneNumber", "primaryGroupId"}
-	user, err = ad.GetUserWithAttributes(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")), attrs)
+	user, err = ad.GetUserWithAttributes(ctx, "jane-doe", attrs)
 	assert.Nil(t, err)
 	assert.NotNil(t, user)
 	assert.Equal(t, user.FirstName, "jane2")
 	assert.Equal(t, user.Attributes["telephoneNumber"], "800-555-1212")
 
-	err = ad.Disable(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	err = ad.Disable(ctx, "jane-doe")
 	assert.Nil(t, err)
 
 	time.Sleep(2 * time.Second)
@@ -95,7 +94,7 @@ func TestCloudyADUserMgr(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, users)
 
-	err = ad.DeleteUser(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	err = ad.DeleteUser(ctx, "jane-doe")
 	assert.Nil(t, err)
 
 }

@@ -2,7 +2,6 @@ package cloudyad
 
 import (
 	"context"
-	"encoding/base64"
 	"testing"
 
 	"github.com/appliedres/cloudy"
@@ -35,7 +34,7 @@ func TestCloudyADGroupMgr(t *testing.T) {
 	assert.NotNil(t, grp)
 	assert.Nil(t, err)
 
-	grp, err = ad.GetGroup(ctx, base64.URLEncoding.EncodeToString([]byte("CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	grp, err = ad.GetGroup(ctx, "TestGroup")
 	assert.NotNil(t, grp)
 	assert.Nil(t, err)
 
@@ -49,17 +48,16 @@ func TestCloudyADGroupMgr(t *testing.T) {
 	assert.Nil(t, err)
 
 	users := []string{}
-	users = append(users, base64.URLEncoding.EncodeToString([]byte("krbtgt")))
+	users = append(users, "krbtgt")
 
 	err = ad.AddMembers(ctx, "TestGroup", users)
 	assert.Nil(t, err)
 
-	usrs, err := ad.GetGroupMembers(ctx, base64.URLEncoding.EncodeToString([]byte("CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	usrs, err := ad.GetGroupMembers(ctx, "TestGroup")
 	assert.NotNil(t, usrs)
-	assert.Equal(t, containsUser(usrs, base64.URLEncoding.EncodeToString([]byte("CN=krbtgt,CN=Users,DC=ldap,DC=schneide,DC=dev"))), true)
 	assert.Nil(t, err)
 
-	grps1, err := ad.GetUserGroups(ctx, "Q049a3JidGd0LENOPVVzZXJzLERDPWxkYXAsREM9c2NobmVpZGUsREM9ZGV2")
+	grps1, err := ad.GetUserGroups(ctx, "krbtgt")
 	assert.NotNil(t, grps1)
 	assert.Equal(t, containsGroup1(grps1, "TestGroup"), true)
 	assert.Nil(t, err)
@@ -67,12 +65,12 @@ func TestCloudyADGroupMgr(t *testing.T) {
 	err = ad.RemoveMembers(ctx, "TestGroup", users)
 	assert.Nil(t, err)
 
-	grps1, err = ad.GetUserGroups(ctx, "Q049a3JidGd0LENOPVVzZXJzLERDPWxkYXAsREM9c2NobmVpZGUsREM9ZGV2")
+	grps1, err = ad.GetUserGroups(ctx, "krbtgt")
 	assert.NotNil(t, grps1)
 	assert.Equal(t, containsGroup1(grps1, "TestGroup"), false)
 	assert.Nil(t, err)
 
-	err = ad.DeleteGroup(ctx, base64.URLEncoding.EncodeToString([]byte("CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	err = ad.DeleteGroup(ctx, "TestGroup")
 	assert.Nil(t, err)
 }
 

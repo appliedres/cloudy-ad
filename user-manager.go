@@ -99,10 +99,6 @@ func NewAdUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdUs
 	return NewAdUserManager(cfg)
 }
 
-func (um *AdUserManager) BuildUserDN(username string) string {
-	return fmt.Sprintf("CN=%v,%v", username, um.client.Config.Users.SearchBase)
-}
-
 func (um *AdUserManager) connect(ctx context.Context) error {
 	_ = ctx
 	err := um.client.Connect()
@@ -117,7 +113,7 @@ func (um *AdUserManager) reconnect(ctx context.Context) error {
 
 func (um *AdUserManager) connectAsNeeded(ctx context.Context) error {
 	var err error
-	if um.client.ConnectedStatus() == false {
+	if !um.client.ConnectedStatus() {
 		err = um.connect(ctx)
 	} else {
 		err = um.reconnect(ctx)
@@ -266,7 +262,7 @@ func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*mo
 	}
 
 	newUser.UID = newUser.Username
-	err = um.client.CreateUser(newUser.UID, *cloudyToUserAttributes(newUser))
+	err = um.client.CreateUser(um.buildUserDN(newUser.UID), *cloudyToUserAttributes(newUser))
 	if err != nil {
 		return nil, err
 	}
@@ -280,8 +276,7 @@ func (um *AdUserManager) UpdateUser(ctx context.Context, usr *models.User) error
 		return err
 	}
 
-	dn := um.BuildUserDN(usr.UID)
-	return um.client.UpdateUser(dn, *cloudyToModifiedAttributes(usr, currentUser))
+	return um.client.UpdateUser(um.buildUserDN(usr.UID), *cloudyToModifiedAttributes(usr, currentUser))
 }
 
 func (um *AdUserManager) Enable(ctx context.Context, uid string) error {
@@ -294,8 +289,8 @@ func (um *AdUserManager) Enable(ctx context.Context, uid string) error {
 		Type: USER_ACCOUNT_CONTROL_TYPE,
 		Vals: []string{fmt.Sprintf("%d", AC_NORMAL_ACCOUNT)},
 	}
-	dn := um.BuildUserDN(uid)
-	return um.client.UpdateUser(dn, []ldap.Attribute{userAccountControl})
+
+	return um.client.UpdateUser(um.buildUserDN(uid), []ldap.Attribute{userAccountControl})
 }
 
 func (um *AdUserManager) Disable(ctx context.Context, uid string) error {
@@ -308,8 +303,8 @@ func (um *AdUserManager) Disable(ctx context.Context, uid string) error {
 		Type: USER_ACCOUNT_CONTROL_TYPE,
 		Vals: []string{fmt.Sprintf("%d", AC_NORMAL_ACCOUNT|AC_ACCOUNTDISABLE)},
 	}
-	dn := um.BuildUserDN(uid)
-	return um.client.UpdateUser(dn, []ldap.Attribute{userAccountControl})
+
+	return um.client.UpdateUser(um.buildUserDN(uid), []ldap.Attribute{userAccountControl})
 }
 
 func (um *AdUserManager) DeleteUser(ctx context.Context, uid string) error {
@@ -318,8 +313,7 @@ func (um *AdUserManager) DeleteUser(ctx context.Context, uid string) error {
 		return err
 	}
 
-	dn := um.BuildUserDN(uid)
-	return um.client.DeleteUser(dn)
+	return um.client.DeleteUser(um.buildUserDN(uid))
 }
 
 func UserToCloudy(user *adc.User, opts *cloudy.UserOptions) *models.User {
@@ -327,7 +321,6 @@ func UserToCloudy(user *adc.User, opts *cloudy.UserOptions) *models.User {
 	enabled := (uac & AC_ACCOUNTDISABLE) == 0
 	// locked := (uac & AC_LOCKOUT) == 0
 	u := &models.User{
-		// UID:         base64.URLEncoding.EncodeToString([]byte(user.DN)),
 		UID:         user.Id,
 		Username:    user.Id,
 		FirstName:   user.GetStringAttribute(FIRST_NAME_TYPE),
@@ -356,6 +349,10 @@ func UserToCloudy(user *adc.User, opts *cloudy.UserOptions) *models.User {
 		}
 	}
 	return u
+}
+
+func (um *AdUserManager) buildUserDN(username string) string {
+	return fmt.Sprintf("CN=%v,%v", username, um.client.Config.Users.SearchBase)
 }
 
 func createUserName(usr *models.User) string {

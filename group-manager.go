@@ -2,7 +2,6 @@ package cloudyad
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"strconv"
 
@@ -92,10 +91,6 @@ func (gm *AdGroupManager) connect(ctx context.Context) error {
 	return gm.client.Connect()
 }
 
-func (gm *AdGroupManager) GroupDN(groupid string) string {
-	return fmt.Sprintf("CN=%v,%v", groupid, gm.client.Config.Groups.SearchBase)
-}
-
 func (um *AdGroupManager) reconnect(ctx context.Context) error {
 	err := um.client.Reconnect(ctx, TICKER_DURATION, MAX_ATTEMPTS)
 
@@ -104,7 +99,7 @@ func (um *AdGroupManager) reconnect(ctx context.Context) error {
 
 func (um *AdGroupManager) connectAsNeeded(ctx context.Context) error {
 	var err error
-	if um.client.ConnectedStatus() == false {
+	if !um.client.ConnectedStatus() {
 		err = um.connect(ctx)
 	} else {
 		err = um.reconnect(ctx)
@@ -144,7 +139,7 @@ func (gm *AdGroupManager) GetGroup(ctx context.Context, id string) (*models.Grou
 	}
 
 	grp, err := gm.client.GetGroup(adc.GetGroupArgs{
-		Dn: gm.GroupDN(id),
+		Dn: gm.buildGroupDN(id),
 	})
 	if err != nil {
 		return nil, err
@@ -167,7 +162,7 @@ func (gm *AdGroupManager) GetGroupId(ctx context.Context, name string) (string, 
 		Id: name,
 	}
 	grp, err := gm.client.GetGroup(args)
-	return base64.URLEncoding.EncodeToString([]byte(grp.DN)), err
+	return grp.DN, err
 }
 
 // Get all the groups for a single user
@@ -178,8 +173,7 @@ func (gm *AdGroupManager) GetUserGroups(ctx context.Context, uid string) ([]*mod
 	}
 
 	user, err := gm.client.GetUser(adc.GetUserArgs{
-		// Dn:               decodeToStr(uid),
-		Id:               uid,
+		Dn:               gm.buildUserDN(uid),
 		SkipGroupsSearch: false,
 	})
 	if err != nil {
@@ -192,7 +186,6 @@ func (gm *AdGroupManager) GetUserGroups(ctx context.Context, uid string) ([]*mod
 	var groups []*models.Group
 	for _, group := range user.Groups {
 		grp, err := gm.client.GetGroup(adc.GetGroupArgs{
-			Dn: group.DN,
 			Id: group.Id,
 		})
 		if err != nil {
@@ -215,9 +208,7 @@ func (gm *AdGroupManager) NewGroup(ctx context.Context, grp *models.Group) (*mod
 		return nil, err
 	}
 
-	grp.ID = "CN=" + grp.Name + "," + gm.client.Config.Groups.SearchBase
-	err = gm.client.CreateGroup(grp.ID, *cloudyToGroupAttributes(grp))
-	grp.ID = base64.URLEncoding.EncodeToString([]byte(grp.ID))
+	err = gm.client.CreateGroup(gm.buildGroupDN(grp.Name), *cloudyToGroupAttributes(grp))
 	return grp, err
 }
 
@@ -233,14 +224,14 @@ func (gm *AdGroupManager) UpdateGroup(ctx context.Context, grp *models.Group) (b
 
 // Get all the members of a group. This returns partial users only,
 // typically just the user id, name and email fields
-func (gm *AdGroupManager) GetGroupMembers(ctx context.Context, grpId string) ([]*models.User, error) {
+func (gm *AdGroupManager) GetGroupMembers(ctx context.Context, name string) ([]*models.User, error) {
 	err := gm.connectAsNeeded(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	grp, err := gm.client.GetGroup(adc.GetGroupArgs{
-		Dn: gm.GroupDN(grpId),
+		Id: name,
 	})
 	if err != nil {
 		return nil, err
@@ -251,7 +242,6 @@ func (gm *AdGroupManager) GetGroupMembers(ctx context.Context, grpId string) ([]
 	users := []*models.User{}
 	for _, user := range grp.Members {
 		usr := &models.User{
-			UID:      base64.URLEncoding.EncodeToString([]byte(user.DN)),
 			Username: user.Id,
 		}
 		users = append(users, usr)
@@ -281,19 +271,25 @@ func (gm *AdGroupManager) AddMembers(ctx context.Context, groupName string, user
 	return err
 }
 
-func (gm *AdGroupManager) DeleteGroup(ctx context.Context, groupId string) error {
+func (gm *AdGroupManager) DeleteGroup(ctx context.Context, groupName string) error {
 	err := gm.connectAsNeeded(ctx)
 	if err != nil {
 		return err
 	}
 
-	dn := gm.GroupDN(groupId)
-	return gm.client.DeleteGroup(dn)
+	return gm.client.DeleteGroup(gm.buildGroupDN(groupName))
+}
+
+func (gm *AdGroupManager) buildGroupDN(groupName string) string {
+	return fmt.Sprintf("CN=%v,%v", groupName, gm.client.Config.Groups.SearchBase)
+}
+
+func (gm *AdGroupManager) buildUserDN(userId string) string {
+	return fmt.Sprintf("CN=%v,%v", userId, gm.client.Config.Users.SearchBase)
 }
 
 func groupAttributesToCloudy(adc *adc.Group) *models.Group {
 	grp := &models.Group{
-		// ID: base64.URLEncoding.EncodeToString([]byte(adc.DN)),
 		ID: adc.DN,
 	}
 
