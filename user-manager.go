@@ -259,6 +259,10 @@ func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*mo
 		newUser.Username = userName
 	}
 
+	if newUser.DisplayName == "" {
+		newUser.DisplayName = fmt.Sprintf("%v %v", newUser.FirstName, newUser.LastName)
+	}
+
 	newUser.UID = "CN=" + newUser.Username + "," + um.client.Config.Groups.SearchBase
 	err = um.client.CreateUser(newUser.UID, *cloudyToUserAttributes(newUser))
 	if err != nil {
@@ -398,6 +402,10 @@ func cloudyToUserAttributes(usr *models.User) *[]ldap.Attribute {
 	})
 
 	for k, v := range usr.Attributes {
+		if v == "" {
+			continue
+		}
+
 		attrs = append(attrs, ldap.Attribute{
 			Type: k,
 			Vals: []string{v},
