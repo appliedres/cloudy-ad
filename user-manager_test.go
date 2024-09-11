@@ -12,7 +12,7 @@ import (
 )
 
 func initUserManager() (*AdUserManager, context.Context, error) {
-	cfg := CreateADTestContainer()
+	cfg := CreateUserADTestContainer()
 
 	ad := NewAdUserManager(cfg)
 	ctx := cloudy.StartContext()
@@ -21,7 +21,7 @@ func initUserManager() (*AdUserManager, context.Context, error) {
 	return ad, ctx, err
 }
 
-func TestCloudyAD(t *testing.T) {
+func TestCloudyADUserMgr(t *testing.T) {
 	ad, ctx, err := initUserManager()
 	assert.Nil(t, err)
 	assert.NotNil(t, ad)
