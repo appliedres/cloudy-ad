@@ -6,7 +6,7 @@
 _debug="yes"
 set -e
 
-project=cloudy-pg
+project=cloudy-ad
 
 debug() {
     if [[ _debug == "yes" ]]; then

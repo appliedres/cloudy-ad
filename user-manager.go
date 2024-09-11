@@ -447,6 +447,9 @@ func cloudyToModifiedAttributes(updateReqUser *models.User, currentUser *models.
 	}
 
 	for k, v := range updateReqUser.Attributes {
+		if v == "" {
+			continue
+		}
 		if currentUser.Attributes[k] == "" || currentUser.Attributes[k] != v {
 			attrs = append(attrs, ldap.Attribute{
 				Type: k,
