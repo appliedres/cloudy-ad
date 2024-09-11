@@ -11,7 +11,7 @@ import (
 func TestSambaStart(t *testing.T) {
 
 	assert.NotPanics(t, func() {
-		cfg := CreateADTestContainer()
+		cfg := CreateUserADTestContainer()
 		cl := adc.New(&adc.Config{
 			URL:         cfg.Address,
 			InsecureTLS: true,
@@ -33,7 +33,6 @@ func TestSambaStart(t *testing.T) {
 		}
 
 		user, err := cl.GetUser(adc.GetUserArgs{
-			// Dn: "CN=john.bauer,CN=Users,DC=ldap,DC=schneide,DC=dev",
 			Id: "john.bauer",
 		})
 		if err != nil {

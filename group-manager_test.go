@@ -1,7 +1,7 @@
 package cloudyad
 
 import (
-	"encoding/base64"
+	"context"
 	"testing"
 
 	"github.com/appliedres/cloudy"
@@ -9,54 +9,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func initGroupManagerConfig() *AdGroupManagerConfig {
-	cfg := &AdGroupManagerConfig{
-		Address:     "ldaps://localhost:636",
-		User:        "DEV-AD\\Administrator",
-		Pwd:         "admin123!",
-		Base:        "DC=ldap,DC=schneide,DC=dev",
-		InsecureTLS: "true",
-	}
-	return cfg
-
-}
-
-func TestGetGroupNoExplicitConnect(t *testing.T) {
-	cfg := initGroupManagerConfig()
-	assert.NotNil(t, cfg)
+func initGroupManager() (*AdGroupManager, context.Context, error) {
+	cfg := CreateGroupADTestContainer()
 
 	ad := NewAdGroupManager(cfg)
-	assert.NotNil(t, ad)
-
-	ctx := cloudy.StartContext()
-	grp, err := ad.GetGroup(ctx, base64.URLEncoding.EncodeToString([]byte("CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")))
-	assert.NotNil(t, grp)
-	assert.Nil(t, err)
-}
-
-func TestGetGroupsByUser(t *testing.T) {
-	cfg := initGroupManagerConfig()
-	assert.NotNil(t, cfg)
-
-	ad := NewAdGroupManager(cfg)
-	assert.NotNil(t, ad)
-
-	ctx := cloudy.StartContext()
-	grps, err := ad.GetUserGroups(ctx, base64.URLEncoding.EncodeToString([]byte("CN=jane-doe,CN=Users,DC=ldap,DC=schneide,DC=dev")))
-	assert.NotNil(t, grps)
-	assert.Nil(t, err)
-}
-
-func TestCreateGroup(t *testing.T) {
-	cfg := initGroupManagerConfig()
-	assert.NotNil(t, cfg)
-
-	ad := NewAdGroupManager(cfg)
-	assert.NotNil(t, ad)
-
 	ctx := cloudy.StartContext()
 	err := ad.connect(ctx)
+
+	return ad, ctx, err
+
+}
+
+func TestCloudyADGroupMgr(t *testing.T) {
+	ad, ctx, err := initGroupManager()
 	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
 
 	newGrp := &models.Group{
 		Name: "TestGroup",
@@ -65,119 +33,70 @@ func TestCreateGroup(t *testing.T) {
 	grp, err := ad.NewGroup(ctx, newGrp)
 	assert.NotNil(t, grp)
 	assert.Nil(t, err)
-}
 
-func TestGetGroup(t *testing.T) {
-	cfg := initGroupManagerConfig()
-	assert.NotNil(t, cfg)
-
-	ad := NewAdGroupManager(cfg)
-	assert.NotNil(t, ad)
-
-	ctx := cloudy.StartContext()
-	err := ad.connect(ctx)
-	assert.Nil(t, err)
-
-	grp, err := ad.GetGroup(ctx, base64.URLEncoding.EncodeToString([]byte("CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")))
+	grp, err = ad.GetGroup(ctx, "TestGroup")
 	assert.NotNil(t, grp)
 	assert.Nil(t, err)
-}
 
-func TestListGroups(t *testing.T) {
-	cfg := initGroupManagerConfig()
-	assert.NotNil(t, cfg)
-
-	ad := NewAdGroupManager(cfg)
-	assert.NotNil(t, ad)
-
-	ctx := cloudy.StartContext()
-	err := ad.connect(ctx)
+	id, err := ad.GetGroupId(ctx, "TestGroup")
+	assert.NotNil(t, id)
 	assert.Nil(t, err)
 
-	grp, err := ad.ListGroups(ctx, "", nil)
-	assert.NotNil(t, grp)
-	assert.Nil(t, err)
-}
-
-func TestGetGroupId(t *testing.T) {
-	cfg := initGroupManagerConfig()
-	assert.NotNil(t, cfg)
-
-	ad := NewAdGroupManager(cfg)
-	assert.NotNil(t, ad)
-
-	ctx := cloudy.StartContext()
-	err := ad.connect(ctx)
-	assert.Nil(t, err)
-
-	grp, err := ad.GetGroupId(ctx, "TestGroup")
-	assert.NotNil(t, grp)
-	assert.Nil(t, err)
-}
-
-func TestAddGroupMembers(t *testing.T) {
-	cfg := initGroupManagerConfig()
-	assert.NotNil(t, cfg)
-
-	ad := NewAdGroupManager(cfg)
-	assert.NotNil(t, ad)
-
-	ctx := cloudy.StartContext()
-	err := ad.connect(ctx)
+	grps, err := ad.ListGroups(ctx, "", nil)
+	assert.NotNil(t, grps)
+	assert.Equal(t, containsGroup(grps, "TestGroup"), true)
 	assert.Nil(t, err)
 
 	users := []string{}
-	users = append(users, "jane-doe")
+	users = append(users, "krbtgt")
 
 	err = ad.AddMembers(ctx, "TestGroup", users)
 	assert.Nil(t, err)
-}
 
-func TestRemoveGroupMembers(t *testing.T) {
-	cfg := initGroupManagerConfig()
-	assert.NotNil(t, cfg)
-
-	ad := NewAdGroupManager(cfg)
-	assert.NotNil(t, ad)
-
-	ctx := cloudy.StartContext()
-	err := ad.connect(ctx)
+	usrs, err := ad.GetGroupMembers(ctx, "TestGroup")
+	assert.NotNil(t, usrs)
 	assert.Nil(t, err)
 
-	users := []string{}
-	users = append(users, "jane-doe")
+	grps1, err := ad.GetUserGroups(ctx, "krbtgt")
+	assert.NotNil(t, grps1)
+	assert.Equal(t, containsGroup1(grps1, "TestGroup"), true)
+	assert.Nil(t, err)
 
 	err = ad.RemoveMembers(ctx, "TestGroup", users)
 	assert.Nil(t, err)
-}
 
-func TestGetGroupMembers(t *testing.T) {
-	cfg := initGroupManagerConfig()
-	assert.NotNil(t, cfg)
-
-	ad := NewAdGroupManager(cfg)
-	assert.NotNil(t, ad)
-
-	ctx := cloudy.StartContext()
-	err := ad.connect(ctx)
+	grps1, err = ad.GetUserGroups(ctx, "krbtgt")
+	assert.NotNil(t, grps1)
+	assert.Equal(t, containsGroup1(grps1, "TestGroup"), false)
 	assert.Nil(t, err)
 
-	users, err := ad.GetGroupMembers(ctx, base64.URLEncoding.EncodeToString([]byte("CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")))
-	assert.NotNil(t, users)
+	err = ad.DeleteGroup(ctx, "TestGroup")
 	assert.Nil(t, err)
 }
 
-func TestDeleteGroup(t *testing.T) {
-	cfg := initGroupManagerConfig()
-	assert.NotNil(t, cfg)
+func containsGroup(groups *[]models.Group, name string) bool {
+	for _, grp := range *groups {
+		if grp.Name == name {
+			return true
+		}
+	}
+	return false
+}
 
-	ad := NewAdGroupManager(cfg)
-	assert.NotNil(t, ad)
+func containsGroup1(groups []*models.Group, name string) bool {
+	for _, grp := range groups {
+		if grp.Name == name {
+			return true
+		}
+	}
+	return false
+}
 
-	ctx := cloudy.StartContext()
-	err := ad.connect(ctx)
-	assert.Nil(t, err)
-
-	err = ad.DeleteGroup(ctx, base64.URLEncoding.EncodeToString([]byte("CN=TestGroup,CN=Users,DC=ldap,DC=schneide,DC=dev")))
-	assert.Nil(t, err)
+func containsUser(users []*models.User, uid string) bool {
+	for _, user := range users {
+		if user.UID == uid {
+			return true
+		}
+	}
+	return false
 }
