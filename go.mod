@@ -7,8 +7,8 @@ go 1.22.1
 // replace github.com/appliedres/cloudy => ../cloudy
 
 require (
-	github.com/appliedres/adc v0.0.4
-	github.com/appliedres/cloudy v0.0.33
+	github.com/appliedres/adc v0.0.6
+	github.com/appliedres/cloudy v0.0.40
 	github.com/go-ldap/ldap/v3 v3.4.8
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.33.0
@@ -56,6 +56,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/text v0.18.0 // indirect
 )
 
 require (

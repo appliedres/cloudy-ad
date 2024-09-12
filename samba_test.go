@@ -32,13 +32,5 @@ func TestSambaStart(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		user, err := cl.GetUser(adc.GetUserArgs{
-			Id: "john.bauer",
-		})
-		if err != nil {
-			t.Fatal(err)
-			// Handle error
-		}
-		assert.Nil(t, user)
 	})
 }

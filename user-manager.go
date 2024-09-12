@@ -270,6 +270,11 @@ func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*mo
 	return newUser, err
 }
 
+func (um *AdUserManager) SetUserPassword(ctx context.Context, usrId string, pwd string) error {
+	err := um.client.SetPassword(um.buildUserDN(usrId), pwd)
+	return err
+}
+
 func (um *AdUserManager) UpdateUser(ctx context.Context, usr *models.User) error {
 	currentUser, err := um.GetUserWithAttributes(ctx, usr.UID, maps.Keys(usr.Attributes))
 	if err != nil || currentUser == nil {
