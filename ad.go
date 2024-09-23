@@ -46,6 +46,7 @@ const ACCT_EXPIRES_TYPE = "accountExpires"
 const OBJ_CLASS_TYPE = "objectClass"
 const INSTANCE_TYPE = "instanceType"
 const SAM_ACCT_NAME_TYPE = "sAMAccountName"
+const PASSWORD_LAST_SET = "pwdLastSet"
 
 const GROUP_NAME_TYPE = "name"
 const GROUP_TYPE = "groupType"

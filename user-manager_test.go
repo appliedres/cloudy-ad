@@ -72,12 +72,18 @@ func TestCloudyADUserMgr(t *testing.T) {
 
 	time.Sleep(2 * time.Second)
 
-	attrs := []string{"sAMAccountName", "telephoneNumber", "primaryGroupId"}
+	err = ad.SetUserPassword(ctx, user.UID, "W!SjA-as44", true)
+	assert.Nil(t, err)
+
+	time.Sleep(2 * time.Second)
+
+	attrs := []string{SAM_ACCT_NAME_TYPE, "telephoneNumber", "primaryGroupId", PASSWORD_LAST_SET}
 	user, err = ad.GetUserWithAttributes(ctx, "jane-doe", attrs)
 	assert.Nil(t, err)
 	assert.NotNil(t, user)
 	assert.Equal(t, user.FirstName, "jane2")
 	assert.Equal(t, user.Attributes["telephoneNumber"], "800-555-1212")
+	assert.Equal(t, user.Attributes[PASSWORD_LAST_SET], "0")
 
 	err = ad.Disable(ctx, "jane-doe")
 	assert.Nil(t, err)
