@@ -7,8 +7,8 @@ go 1.22.1
 // replace github.com/appliedres/cloudy => ../cloudy
 
 require (
-	github.com/appliedres/adc v0.0.6
-	github.com/appliedres/cloudy v0.0.40
+	github.com/appliedres/adc v0.0.7
+	github.com/appliedres/cloudy v0.0.41
 	github.com/go-ldap/ldap/v3 v3.4.8
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.33.0
