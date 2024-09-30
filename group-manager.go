@@ -173,7 +173,7 @@ func (gm *AdGroupManager) GetUserGroups(ctx context.Context, uid string) ([]*mod
 	}
 
 	user, err := gm.client.GetUser(adc.GetUserArgs{
-		Dn:               gm.buildUserDN(uid),
+		Id:               uid,
 		SkipGroupsSearch: false,
 	})
 	if err != nil {
@@ -282,10 +282,6 @@ func (gm *AdGroupManager) DeleteGroup(ctx context.Context, groupName string) err
 
 func (gm *AdGroupManager) buildGroupDN(groupName string) string {
 	return fmt.Sprintf("CN=%v,%v", groupName, gm.client.Config.Groups.SearchBase)
-}
-
-func (gm *AdGroupManager) buildUserDN(userId string) string {
-	return fmt.Sprintf("CN=%v,%v", userId, gm.client.Config.Users.SearchBase)
 }
 
 func groupAttributesToCloudy(adc *adc.Group) *models.Group {
