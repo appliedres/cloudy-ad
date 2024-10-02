@@ -39,11 +39,12 @@ func (umf *AdUserManagerFactory) FromEnv(env *cloudy.Environment) (interface{}, 
 }
 
 type AdUserManagerConfig struct {
-	Address     string
-	User        string
-	Pwd         string
-	Base        string
-	InsecureTLS string
+	Address         string
+	User            string
+	Pwd             string
+	Base            string
+	InsecureTLS     string
+	UserIdAttribute string
 }
 
 // USER MANAGER
@@ -58,18 +59,23 @@ func NewAdUserManager(cfg *AdUserManagerConfig) *AdUserManager {
 		insecureTLS = false
 	}
 
+	if cfg.UserIdAttribute == "" {
+		cfg.UserIdAttribute = USERNAME_TYPE
+	}
+
 	cl := adc.New(&adc.Config{
 		URL:         cfg.Address,
 		InsecureTLS: insecureTLS,
 		SearchBase:  cfg.Base,
 		Users: &adc.UsersConfigs{
 			SearchBase:  fmt.Sprintf("CN=Users,%v", cfg.Base),
-			IdAttribute: USERNAME_TYPE,
+			IdAttribute: cfg.UserIdAttribute,
 			Attributes:  USER_STANDARD_ATTRS,
 		},
 		Groups: &adc.GroupsConfigs{
-			SearchBase: fmt.Sprintf("CN=Users,%v", cfg.Base),
-			Attributes: GROUP_STANDARD_ATTRS,
+			SearchBase:  fmt.Sprintf("CN=Users,%v", cfg.Base),
+			IdAttribute: cfg.UserIdAttribute,
+			Attributes:  GROUP_STANDARD_ATTRS,
 		},
 		Bind: &adc.BindAccount{
 			DN:       cfg.User,
@@ -90,11 +96,12 @@ func NewAdUserManager(cfg *AdUserManagerConfig) *AdUserManager {
 
 func NewAdUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdUserManager {
 	cfg := &AdUserManagerConfig{
-		Address:     env.Force("AD_HOST"),
-		User:        env.Force("AD_USER"),
-		Pwd:         env.Force("AD_PWD"),
-		Base:        env.Force("AD_BASE"),
-		InsecureTLS: env.Force("AD_INSECURE_TLS"),
+		Address:         env.Force("AD_HOST"),
+		User:            env.Force("AD_USER"),
+		Pwd:             env.Force("AD_PWD"),
+		Base:            env.Force("AD_BASE"),
+		InsecureTLS:     env.Force("AD_INSECURE_TLS"),
+		UserIdAttribute: env.Force("AD_USER_ID_ATTRIBUTE"),
 	}
 	return NewAdUserManager(cfg)
 }

@@ -20,6 +20,28 @@ func initGroupManager() (*AdGroupManager, context.Context, error) {
 
 }
 
+func TestGetUserGroups(t *testing.T) {
+	ad, ctx, err := initGroupManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	groups, err := ad.GetUserGroups(ctx, "dcarlet")
+	assert.Nil(t, err)
+	assert.NotNil(t, groups)
+}
+
+func TestGetGroupMembers(t *testing.T) {
+	ad, ctx, err := initGroupManager()
+	assert.Nil(t, err)
+	assert.NotNil(t, ad)
+	assert.NotNil(t, ctx)
+
+	users, err := ad.GetGroupMembers(ctx, "Team 1")
+	assert.Nil(t, err)
+	assert.NotNil(t, users)
+}
+
 func TestCloudyADGroupMgr(t *testing.T) {
 	ad, ctx, err := initGroupManager()
 	assert.Nil(t, err)
