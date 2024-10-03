@@ -302,7 +302,12 @@ func groupAttributesToCloudy(adc *adc.Group) *models.Group {
 		grp.Name = fmt.Sprintf("%v", val)
 	}
 
-	grp.Source = GROUP_SOURCE
+	val, ok = adc.Attributes[GROUP_COMMON_NAME]
+	if ok {
+		grp.ID = fmt.Sprintf("%v", val)
+	}
+
+	grp.Source = adc.DN
 	return grp
 }
 
