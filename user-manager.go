@@ -287,7 +287,12 @@ func (um *AdUserManager) UpdateUser(ctx context.Context, usr *models.User) error
 		return err
 	}
 
-	return um.client.UpdateUser(um.buildUserDN(usr.UID), *cloudyToModifiedAttributes(usr, currentUser))
+	attrs := *cloudyToModifiedAttributes(usr, currentUser)
+	if len(attrs) == 0 {
+		return nil
+	}
+
+	return um.client.UpdateUser(um.buildUserDN(usr.UID), attrs)
 }
 
 func (um *AdUserManager) Enable(ctx context.Context, uid string) error {
