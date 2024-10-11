@@ -216,7 +216,14 @@ func (gm *AdGroupManager) NewGroup(ctx context.Context, grp *models.Group) (*mod
 	}
 
 	err = gm.client.CreateGroup(gm.buildGroupDN(grp.Name), *cloudyToGroupAttributes(grp))
-	return grp, err
+	if err != nil {
+		return nil, err
+	}
+
+	group, err := gm.client.GetGroup(adc.GetGroupArgs{
+		Dn: gm.buildGroupDN(grp.Name),
+	})
+	return groupAttributesToCloudy(group), err
 }
 
 // Update a group. This is generally just the name of the group.
