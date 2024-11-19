@@ -92,7 +92,16 @@ func TestCloudyADGroupMgr(t *testing.T) {
 	assert.Equal(t, containsGroup1(grps1, "TestGroup"), false)
 	assert.Nil(t, err)
 
-	err = ad.DeleteGroup(ctx, "TestGroup")
+	grp.Name = "TestGroup1"
+	updated, err := ad.UpdateGroup(ctx, grp)
+	assert.Nil(t, err)
+	assert.Equal(t, updated, true)
+
+	updatedGroup, err := ad.GetGroup(ctx, "TestGroup1")
+	assert.NotNil(t, updatedGroup)
+	assert.Nil(t, err)
+
+	err = ad.DeleteGroup(ctx, "TestGroup1")
 	assert.Nil(t, err)
 }
 
