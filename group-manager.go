@@ -226,9 +226,14 @@ func (gm *AdGroupManager) NewGroup(ctx context.Context, grp *models.Group) (*mod
 	return groupAttributesToCloudy(group), err
 }
 
-// Update a group. This is generally just the name of the group.
+// This is only a rename of the group.
 func (gm *AdGroupManager) UpdateGroup(ctx context.Context, grp *models.Group) (bool, error) {
 	err := gm.connectAsNeeded(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	err = gm.client.RenameGroup(grp.Source, "CN="+grp.Name)
 	if err != nil {
 		return false, err
 	}

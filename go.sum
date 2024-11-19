@@ -12,8 +12,8 @@ github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERo
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/alexbrainman/sspi v0.0.0-20231016080023-1a75b4708caa h1:LHTHcTQiSGT7VVbI0o4wBRNQIgn917usHWOd6VAffYI=
 github.com/alexbrainman/sspi v0.0.0-20231016080023-1a75b4708caa/go.mod h1:cEWa1LVoE5KvSD9ONXsZrj0z6KqySlCCNKHlLzbqAt4=
-github.com/appliedres/adc v0.0.8 h1:CM6oioT2nNoiAxUteCUt5aVwt75UwLdyEAWSmh1niqc=
-github.com/appliedres/adc v0.0.8/go.mod h1:3seCF3H/Nl0Futeubmq5a1I9crzNvPwZU11JcOeLzKI=
+github.com/appliedres/adc v0.0.9 h1:/U5/vKkvRj+G5dotUmR4XgDxzwQozSdS7FM1bcktf1s=
+github.com/appliedres/adc v0.0.9/go.mod h1:3seCF3H/Nl0Futeubmq5a1I9crzNvPwZU11JcOeLzKI=
 github.com/appliedres/cloudy v0.0.41 h1:uN0Axhk/CEdqyUyVzq/h61it/bH0vTP+Abb93Z9J3QY=
 github.com/appliedres/cloudy v0.0.41/go.mod h1:FB4U1ffrAEo43oWZFyotmixhm+uvnAWj2/85h2iFBaw=
 github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 h1:DklsrG3dyBCFEj5IhUbnKptjxatkF07cF2ak3yi77so=
