@@ -43,6 +43,9 @@ type AdUserManagerConfig struct {
 	User            string
 	Pwd             string
 	Base            string
+	UserBase        string
+	GroupBase       string
+	Domain          string
 	InsecureTLS     string
 	UserIdAttribute string
 }
@@ -68,12 +71,12 @@ func NewAdUserManager(cfg *AdUserManagerConfig) *AdUserManager {
 		InsecureTLS: insecureTLS,
 		SearchBase:  cfg.Base,
 		Users: &adc.UsersConfigs{
-			SearchBase:  fmt.Sprintf("CN=Users,%v", cfg.Base),
+			SearchBase:  cfg.Base,
 			IdAttribute: cfg.UserIdAttribute,
 			Attributes:  USER_STANDARD_ATTRS,
 		},
 		Groups: &adc.GroupsConfigs{
-			SearchBase:  fmt.Sprintf("CN=Users,%v", cfg.Base),
+			SearchBase:  cfg.Base,
 			IdAttribute: cfg.UserIdAttribute,
 			Attributes:  GROUP_STANDARD_ATTRS,
 		},
@@ -100,6 +103,9 @@ func NewAdUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdUs
 		User:            env.Force("AD_USER"),
 		Pwd:             env.Force("AD_PWD"),
 		Base:            env.Force("AD_BASE"),
+		GroupBase:       env.Force("AD_GROUP_BASE"),
+		UserBase:        env.Force("AD_USER_BASE"),
+		Domain:          env.Force("AD_DOMAIN"),
 		InsecureTLS:     env.Force("AD_INSECURE_TLS"),
 		UserIdAttribute: env.Force("AD_USER_ID_ATTRIBUTE"),
 	}
@@ -269,7 +275,7 @@ func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*mo
 	}
 
 	newUser.UID = newUser.Username
-	err = um.client.CreateUser(um.buildUserDN(newUser.UID), *cloudyToUserAttributes(newUser))
+	err = um.client.CreateUser(um.buildUserDN(newUser.UID), *cloudyToUserAttributes(newUser, fmt.Sprintf("%v.%v@%v", newUser.FirstName, newUser.LastName, um.cfg.Domain)))
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +353,7 @@ func UserToCloudy(user *adc.User, opts *cloudy.UserOptions) *models.User {
 	}
 
 	for k, v := range user.Attributes {
-		if !inStdAttrs(k) {
+		if !inObjAttrs(k) {
 			if u.Attributes == nil {
 				u.Attributes = make(map[string]string)
 			}
@@ -368,7 +374,7 @@ func UserToCloudy(user *adc.User, opts *cloudy.UserOptions) *models.User {
 }
 
 func (um *AdUserManager) buildUserDN(username string) string {
-	return fmt.Sprintf("CN=%v,%v", username, um.client.Config.Users.SearchBase)
+	return fmt.Sprintf("CN=%v,%v", username, um.cfg.UserBase)
 }
 
 func createUserName(usr *models.User) string {
@@ -376,7 +382,7 @@ func createUserName(usr *models.User) string {
 	return userName
 }
 
-func cloudyToUserAttributes(usr *models.User) *[]ldap.Attribute {
+func cloudyToUserAttributes(usr *models.User, upn string) *[]ldap.Attribute {
 	attrs := []ldap.Attribute{}
 
 	attrs = append(attrs, ldap.Attribute{
@@ -386,6 +392,10 @@ func cloudyToUserAttributes(usr *models.User) *[]ldap.Attribute {
 	attrs = append(attrs, ldap.Attribute{
 		Type: USERNAME_TYPE,
 		Vals: []string{usr.Username},
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: USER_PRINCIPAL_NAME_TYPE,
+		Vals: []string{upn},
 	})
 	attrs = append(attrs, ldap.Attribute{
 		Type: SAM_ACCT_NAME_TYPE,
@@ -479,8 +489,8 @@ func cloudyToModifiedAttributes(updateReqUser *models.User, currentUser *models.
 	return &attrs
 }
 
-func inStdAttrs(key string) bool {
-	for _, v := range USER_STANDARD_ATTRS {
+func inObjAttrs(key string) bool {
+	for _, v := range USER_OBJECT_ATTRS {
 		if key == v {
 			return true
 		}

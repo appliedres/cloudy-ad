@@ -1,7 +1,6 @@
 package cloudyad
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/appliedres/adc"
@@ -17,10 +16,10 @@ func TestSambaStart(t *testing.T) {
 			InsecureTLS: true,
 			SearchBase:  cfg.Base,
 			Users: &adc.UsersConfigs{
-				SearchBase: fmt.Sprintf("CN=Users,%v", cfg.Base),
+				SearchBase: cfg.Base,
 			},
 			Groups: &adc.GroupsConfigs{
-				SearchBase: fmt.Sprintf("CN=Users,%v", cfg.Base),
+				SearchBase: cfg.Base,
 			},
 			Bind: &adc.BindAccount{
 				DN:       cfg.User,

@@ -32,6 +32,9 @@ type AdGroupManagerConfig struct {
 	User            string
 	Pwd             string
 	Base            string
+	UserBase        string
+	GroupBase       string
+	Domain          string
 	InsecureTLS     string
 	UserIdAttribute string
 }
@@ -56,12 +59,12 @@ func NewAdGroupManager(cfg *AdGroupManagerConfig) *AdGroupManager {
 		InsecureTLS: insecureTLS,
 		SearchBase:  cfg.Base,
 		Users: &adc.UsersConfigs{
-			SearchBase:  fmt.Sprintf("CN=Users,%v", cfg.Base),
+			SearchBase:  cfg.Base,
 			IdAttribute: cfg.UserIdAttribute,
 			Attributes:  USER_STANDARD_ATTRS,
 		},
 		Groups: &adc.GroupsConfigs{
-			SearchBase:  fmt.Sprintf("CN=Users,%v", cfg.Base),
+			SearchBase:  cfg.Base,
 			IdAttribute: cfg.UserIdAttribute,
 			Attributes:  GROUP_STANDARD_ATTRS,
 		},
@@ -86,6 +89,9 @@ func NewAdGroupManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdG
 		User:            env.Force("AD_USER"),
 		Pwd:             env.Force("AD_PWD"),
 		Base:            env.Force("AD_BASE"),
+		GroupBase:       env.Force("AD_GROUP_BASE"),
+		UserBase:        env.Force("AD_USER_BASE"),
+		Domain:          env.Force("AD_DOMAIN"),
 		InsecureTLS:     env.Force("AD_INSECURE_TLS"),
 		UserIdAttribute: env.Force("AD_USER_ID_ATTRIBUTE"),
 	}
@@ -223,6 +229,9 @@ func (gm *AdGroupManager) NewGroup(ctx context.Context, grp *models.Group) (*mod
 	group, err := gm.client.GetGroup(adc.GetGroupArgs{
 		Dn: gm.buildGroupDN(grp.Name),
 	})
+	if err != nil || group == nil {
+		return nil, err
+	}
 	return groupAttributesToCloudy(group), err
 }
 
@@ -301,7 +310,7 @@ func (gm *AdGroupManager) DeleteGroup(ctx context.Context, groupName string) err
 }
 
 func (gm *AdGroupManager) buildGroupDN(groupName string) string {
-	return fmt.Sprintf("CN=%v,%v", groupName, gm.client.Config.Groups.SearchBase)
+	return fmt.Sprintf("CN=%v,%v", groupName, gm.cfg.GroupBase)
 }
 
 func groupAttributesToCloudy(adc *adc.Group) *models.Group {

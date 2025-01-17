@@ -42,11 +42,14 @@ func CreateUserADTestContainer() *AdUserManagerConfig {
 	}
 
 	return &AdUserManagerConfig{
-		Address:         fmt.Sprintf("ldaps://%v:%v", hostname, port.Port()),
-		User:            "DEV-AD\\Administrator",
-		Pwd:             "admin123!",
-		Base:            "DC=ldap,DC=schneide,DC=dev",
-		InsecureTLS:     "true",
+		Address:     fmt.Sprintf("ldaps://%v:%v", hostname, port.Port()),
+		User:        "DEV-AD\\Administrator",
+		Pwd:         "admin123!",
+		Base:        "DC=ldap,DC=schneide,DC=dev",
+		UserBase:    "DC=ldap,DC=schneide,DC=dev",
+		GroupBase:   "DC=ldap,DC=schneide,DC=dev",
+		Domain:      "appliedres.com",
+		InsecureTLS: "true",
 		UserIdAttribute: "cn",
 	}
 }
@@ -84,11 +87,13 @@ func CreateGroupADTestContainer() *AdGroupManagerConfig {
 	}
 
 	return &AdGroupManagerConfig{
-		Address:         fmt.Sprintf("ldaps://%v:%v", hostname, port.Port()),
-		User:            "DEV-AD\\Administrator",
-		Pwd:             "admin123!",
-		Base:            "DC=ldap,DC=schneide,DC=dev",
-		InsecureTLS:     "true",
-		UserIdAttribute: "cn",
+		Address:     fmt.Sprintf("ldaps://%v:%v", hostname, port.Port()),
+		User:        "DEV-AD\\Administrator",
+		Pwd:         "admin123!",
+		Base:        "DC=ldap,DC=schneide,DC=dev",
+		UserBase:    "DC=ldap,DC=schneide,DC=dev",
+		GroupBase:   "DC=ldap,DC=schneide,DC=dev",
+		Domain:      "appliedres.com",
+		InsecureTLS: "true",
 	}
 }
