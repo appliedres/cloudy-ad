@@ -62,6 +62,14 @@ func NewAdUserManager(cfg *AdUserManagerConfig) *AdUserManager {
 		insecureTLS = false
 	}
 
+	if cfg.GroupBase == "" {
+		cfg.GroupBase = cfg.Base
+	}
+
+	if cfg.UserBase == "" {
+		cfg.UserBase = cfg.Base
+	}
+
 	if cfg.UserIdAttribute == "" {
 		cfg.UserIdAttribute = USERNAME_TYPE
 	}
