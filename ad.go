@@ -36,6 +36,7 @@ const TICKER_DURATION = 0
 const MAX_ATTEMPTS = 0
 
 const DISPLAY_NAME_TYPE = "displayName"
+const NAME_TYPE = "name"
 const FIRST_NAME_TYPE = "givenName"
 const LAST_NAME_TYPE = "sn"
 const EMAIL_TYPE = "mail"
