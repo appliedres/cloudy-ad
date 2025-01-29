@@ -9,6 +9,7 @@ import (
 
 	"github.com/appliedres/adc"
 	"github.com/appliedres/cloudy"
+	"github.com/appliedres/cloudy/logging"
 	"github.com/appliedres/cloudy/models"
 	"github.com/go-ldap/ldap/v3"
 	"golang.org/x/exp/maps"
@@ -263,6 +264,7 @@ func (um *AdUserManager) GetUserByEmail(ctx context.Context, email string, opts 
 // NewUser creates a new user with the given information and returns the new user with any additional
 // fields populated
 func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*models.User, error) {
+	log := logging.GetLogger(ctx)
 	err := um.connectAsNeeded(ctx)
 	if err != nil {
 		return nil, err
@@ -283,6 +285,8 @@ func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*mo
 	}
 
 	newUser.UID = newUser.Username
+	log.DebugContext(ctx, "config:", "UserIdAttribute", um.cfg.UserIdAttribute)
+	log.DebugContext(ctx, "newUser:", "newUser", newUser.UID)
 	err = um.client.CreateUser(um.buildUserDN(newUser.UID), *cloudyToUserAttributes(newUser, fmt.Sprintf("%v.%v@%v", newUser.FirstName, newUser.LastName, um.cfg.Domain)))
 	if err != nil {
 		return nil, err
