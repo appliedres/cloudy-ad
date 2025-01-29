@@ -268,7 +268,7 @@ func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*mo
 		return nil, err
 	}
 
-	userName, userExists, err := um.ForceUserName(ctx, createUserName(newUser))
+	userName, userExists, err := um.ForceUserName(ctx, um.createUserName(newUser))
 	if err != nil {
 		return nil, err
 	}
@@ -385,8 +385,13 @@ func (um *AdUserManager) buildUserDN(username string) string {
 	return fmt.Sprintf("CN=%v,%v", username, um.cfg.UserBase)
 }
 
-func createUserName(usr *models.User) string {
-	userName := strings.ToLower(usr.FirstName + "-" + usr.LastName)
+func (um *AdUserManager) createUserName(usr *models.User) string {
+	var userName string
+	if um.cfg.UserIdAttribute == DISPLAY_NAME_TYPE {
+		userName = usr.DisplayName
+	} else {
+		userName = strings.ToLower(usr.FirstName + "-" + usr.LastName)
+	}
 	return userName
 }
 
@@ -407,6 +412,10 @@ func cloudyToUserAttributes(usr *models.User, upn string) *[]ldap.Attribute {
 	})
 	attrs = append(attrs, ldap.Attribute{
 		Type: SAM_ACCT_NAME_TYPE,
+		Vals: []string{usr.Username},
+	})
+	attrs = append(attrs, ldap.Attribute{
+		Type: NAME_TYPE,
 		Vals: []string{usr.Username},
 	})
 	attrs = append(attrs, ldap.Attribute{
