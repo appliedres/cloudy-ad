@@ -268,6 +268,10 @@ func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*mo
 		return nil, err
 	}
 
+	if newUser.DisplayName == "" {
+		newUser.DisplayName = fmt.Sprintf("%v %v", newUser.FirstName, newUser.LastName)
+	}
+
 	userName, userExists, err := um.ForceUserName(ctx, um.createUserName(newUser))
 	if err != nil {
 		return nil, err
@@ -276,10 +280,6 @@ func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*mo
 		return nil, fmt.Errorf("User already exists %v", userName)
 	} else {
 		newUser.Username = userName
-	}
-
-	if newUser.DisplayName == "" {
-		newUser.DisplayName = fmt.Sprintf("%v %v", newUser.FirstName, newUser.LastName)
 	}
 
 	newUser.UID = newUser.Username

@@ -40,12 +40,12 @@ func TestCloudyADUserMgr(t *testing.T) {
 
 	time.Sleep(2 * time.Second)
 
-	err = ad.Enable(ctx, "jane-doe")
+	err = ad.Enable(ctx, newUsr.UID)
 	assert.Nil(t, err)
 
 	time.Sleep(2 * time.Second)
 
-	user, err := ad.GetUser(ctx, "jane-doe")
+	user, err := ad.GetUser(ctx, newUsr.UID)
 	assert.Nil(t, err)
 	assert.NotNil(t, user)
 	assert.Equal(t, user.FirstName, "Jane")
@@ -59,8 +59,8 @@ func TestCloudyADUserMgr(t *testing.T) {
 	m := make(map[string]string)
 	m["telephoneNumber"] = "800-555-1212"
 	user = &models.User{
-		UID:         "jane-doe",
-		Username:    "jane-doe",
+		UID:         newUsr.UID,
+		Username:    newUsr.Username,
 		FirstName:   "jane2",
 		LastName:    "doe2",
 		DisplayName: "jane2 doe2",
@@ -78,19 +78,19 @@ func TestCloudyADUserMgr(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	attrs := []string{SAM_ACCT_NAME_TYPE, "telephoneNumber", "primaryGroupId", PASSWORD_LAST_SET}
-	user, err = ad.GetUserWithAttributes(ctx, "jane-doe", attrs)
+	user, err = ad.GetUserWithAttributes(ctx, newUsr.UID, attrs)
 	assert.Nil(t, err)
 	assert.NotNil(t, user)
 	assert.Equal(t, user.FirstName, "jane2")
 	assert.Equal(t, user.Attributes["telephoneNumber"], "800-555-1212")
 	assert.Equal(t, user.Attributes[PASSWORD_LAST_SET], "0")
 
-	err = ad.Disable(ctx, "jane-doe")
+	err = ad.Disable(ctx, newUsr.UID)
 	assert.Nil(t, err)
 
 	time.Sleep(2 * time.Second)
 
-	user, err = ad.GetUserByUserName(ctx, "jane-doe")
+	user, err = ad.GetUserByUserName(ctx, newUsr.UID)
 	assert.Nil(t, err)
 	assert.NotNil(t, user)
 	assert.Equal(t, user.FirstName, "jane2")
@@ -100,7 +100,7 @@ func TestCloudyADUserMgr(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, users)
 
-	err = ad.DeleteUser(ctx, "jane-doe")
+	err = ad.DeleteUser(ctx, newUsr.UID)
 	assert.Nil(t, err)
 
 }
