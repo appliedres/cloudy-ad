@@ -270,6 +270,10 @@ func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*mo
 		return nil, err
 	}
 
+	if newUser.DisplayName == "" {
+		newUser.DisplayName = fmt.Sprintf("%v %v", newUser.FirstName, newUser.LastName)
+	}
+
 	userName, userExists, err := um.ForceUserName(ctx, um.createUserName(newUser))
 	if err != nil {
 		return nil, err
@@ -280,13 +284,7 @@ func (um *AdUserManager) NewUser(ctx context.Context, newUser *models.User) (*mo
 		newUser.Username = userName
 	}
 
-	if newUser.DisplayName == "" {
-		newUser.DisplayName = fmt.Sprintf("%v %v", newUser.FirstName, newUser.LastName)
-	}
-
 	newUser.UID = newUser.Username
-	log.DebugContext(ctx, "config:", "UserIdAttribute", um.cfg.UserIdAttribute)
-	log.DebugContext(ctx, "newUser:", "newUser", newUser.UID)
 	err = um.client.CreateUser(um.buildUserDN(newUser.UID), *cloudyToUserAttributes(newUser, fmt.Sprintf("%v.%v@%v", newUser.FirstName, newUser.LastName, um.cfg.Domain)))
 	if err != nil {
 		return nil, err
