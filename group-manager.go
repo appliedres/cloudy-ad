@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	cloudy.GroupProviders.Register(ActiveDirectory, &AdGroupManagerFactory{})
+	cloudy.GroupProviders.Register(ACTIVE_DIRECTORY, &AdGroupManagerFactory{})
 }
 
 type AdGroupManagerFactory struct{}
@@ -37,6 +37,7 @@ type AdGroupManagerConfig struct {
 	Domain          string
 	InsecureTLS     string
 	UserIdAttribute string
+	PageSize        int
 }
 
 type AdGroupManager struct {
@@ -52,6 +53,10 @@ func NewAdGroupManager(cfg *AdGroupManagerConfig) *AdGroupManager {
 
 	if cfg.UserIdAttribute == "" {
 		cfg.UserIdAttribute = USERNAME_TYPE
+	}
+
+	if cfg.PageSize <= 0 {
+		cfg.PageSize = PAGE_SIZE
 	}
 
 	cl := adc.New(&adc.Config{
@@ -84,6 +89,11 @@ func NewAdGroupManager(cfg *AdGroupManagerConfig) *AdGroupManager {
 }
 
 func NewAdGroupManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdGroupManager {
+	pageSize, err := strconv.ParseInt(env.Force("AD_PAGE_SIZE"), 10, 32)
+	if err != nil {
+		pageSize = PAGE_SIZE
+	}
+
 	cfg := &AdGroupManagerConfig{
 		Address:         env.Force("AD_HOST"),
 		User:            env.Force("AD_USER"),
@@ -94,6 +104,7 @@ func NewAdGroupManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdG
 		Domain:          env.Force("AD_DOMAIN"),
 		InsecureTLS:     env.Force("AD_INSECURE_TLS"),
 		UserIdAttribute: env.Force("AD_USER_ID_ATTRIBUTE"),
+		PageSize:        int(pageSize),
 	}
 
 	return NewAdGroupManager(cfg)
@@ -129,7 +140,7 @@ func (gm *AdGroupManager) ListGroups(ctx context.Context, filter string, attrs [
 	}
 
 	args.Attributes = append(attrs, GROUP_STANDARD_ATTRS...)
-	grps, err := gm.client.ListGroups(args, filter)
+	grps, err := gm.client.ListGroups(args, gm.cfg.PageSize, filter)
 	if err != nil {
 		return nil, err
 	}

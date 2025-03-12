@@ -19,11 +19,8 @@ type PageRequest struct {
 	Max   int
 }
 
-const ActiveDirectory = "active-directory"
-const PageSize = 100
-
 func init() {
-	cloudy.UserProviders.Register(ActiveDirectory, &AdUserManagerFactory{})
+	cloudy.UserProviders.Register(ACTIVE_DIRECTORY, &AdUserManagerFactory{})
 }
 
 type AdUserManagerFactory struct{}
@@ -48,6 +45,7 @@ type AdUserManagerConfig struct {
 	Domain          string
 	InsecureTLS     string
 	UserIdAttribute string
+	PageSize        int
 }
 
 // USER MANAGER
@@ -72,6 +70,10 @@ func NewAdUserManager(cfg *AdUserManagerConfig) *AdUserManager {
 
 	if cfg.UserIdAttribute == "" {
 		cfg.UserIdAttribute = USERNAME_TYPE
+	}
+
+	if cfg.PageSize <= 0 {
+		cfg.PageSize = PAGE_SIZE
 	}
 
 	cl := adc.New(&adc.Config{
@@ -106,6 +108,11 @@ func NewAdUserManager(cfg *AdUserManagerConfig) *AdUserManager {
 }
 
 func NewAdUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdUserManager {
+	pageSize, err := strconv.ParseInt(env.Force("AD_PAGE_SIZE"), 10, 32)
+	if err != nil {
+		pageSize = PAGE_SIZE
+	}
+
 	cfg := &AdUserManagerConfig{
 		Address:         env.Force("AD_HOST"),
 		User:            env.Force("AD_USER"),
@@ -116,6 +123,7 @@ func NewAdUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdUs
 		Domain:          env.Force("AD_DOMAIN"),
 		InsecureTLS:     env.Force("AD_INSECURE_TLS"),
 		UserIdAttribute: env.Force("AD_USER_ID_ATTRIBUTE"),
+		PageSize:        int(pageSize),
 	}
 	return NewAdUserManager(cfg)
 }
@@ -165,7 +173,7 @@ func (um *AdUserManager) ListUsers(ctx context.Context, filter string, attrs []s
 	}
 
 	args.Attributes = append(attrs, USER_STANDARD_ATTRS...)
-	users, err := um.client.ListUsers(args, filter)
+	users, err := um.client.ListUsers(args, um.cfg.PageSize, filter)
 	if err != nil {
 		return nil, err
 	}
