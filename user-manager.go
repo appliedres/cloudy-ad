@@ -3,6 +3,7 @@ package cloudyad
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
@@ -129,14 +130,38 @@ func NewAdUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) *AdUs
 }
 
 func (um *AdUserManager) connect(ctx context.Context) error {
-	_ = ctx
 	err := um.client.Connect()
+
+	slog.DebugContext(ctx, "Connecting to AD using config",
+		"address: ", um.cfg.Address,
+		"user: ", um.cfg.User,
+		"base: ", um.cfg.Base,
+		"groupBase: ", um.cfg.GroupBase,
+		"userBase: ", um.cfg.UserBase,
+		"domain: ", um.cfg.Domain,
+		"insecureTLS: ", um.cfg.InsecureTLS,
+		"userIdAttribute: ", um.cfg.UserIdAttribute,
+		"pageSize: ", um.cfg.PageSize,
+	)
 
 	return err
 }
 
 func (um *AdUserManager) reconnect(ctx context.Context) error {
 	err := um.client.Reconnect(ctx, TICKER_DURATION, MAX_ATTEMPTS)
+
+	slog.DebugContext(ctx, "Reconnecting to AD using config",
+		"address: ", um.cfg.Address,
+		"user: ", um.cfg.User,
+		"base: ", um.cfg.Base,
+		"groupBase: ", um.cfg.GroupBase,
+		"userBase: ", um.cfg.UserBase,
+		"domain: ", um.cfg.Domain,
+		"insecureTLS: ", um.cfg.InsecureTLS,
+		"userIdAttribute: ", um.cfg.UserIdAttribute,
+		"pageSize: ", um.cfg.PageSize,
+	)
+
 	return err
 }
 
@@ -184,6 +209,10 @@ func (um *AdUserManager) ListUsers(ctx context.Context, filter string, attrs []s
 	var results []models.User
 	for _, user := range *users {
 		results = append(results, *UserToCloudy(&user, nil))
+		slog.DebugContext(ctx, "List users",
+			"id: ", user.Id,
+			"dn: ", user.DN,
+			"uid: ", user.GetStringAttribute(um.cfg.UserIdAttribute))
 	}
 	return &results, nil
 }
