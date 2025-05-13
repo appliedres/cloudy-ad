@@ -281,8 +281,8 @@ func (gm *AdGroupManager) GetGroupMembers(ctx context.Context, name string) ([]*
 	users := []*models.User{}
 	for _, user := range grp.Members {
 		usr := &models.User{
-			Username: user.Id,
-			UID:      user.DN,
+			Username: user.DN,
+			UID:      user.Id,
 		}
 		users = append(users, usr)
 	}
@@ -307,7 +307,16 @@ func (gm *AdGroupManager) AddMembers(ctx context.Context, groupName string, user
 		return err
 	}
 
-	_, err = gm.client.AddGroupMembers(groupName, userNames...)
+	if len(userNames) == 0 {
+		return nil
+	}
+
+	unames := []string{}
+	for _, u := range userNames {
+		unames = append(unames, gm.buildUserDN(u))
+	}
+
+	_, err = gm.client.AddGroupMembers(groupName, unames...)
 	return err
 }
 
@@ -368,4 +377,8 @@ func cloudyToGroupAttributes(grp *models.Group) *[]ldap.Attribute {
 	})
 
 	return &attrs
+}
+
+func (gm *AdGroupManager) buildUserDN(username string) string {
+	return fmt.Sprintf("CN=%v,%v", username, gm.cfg.UserBase)
 }
