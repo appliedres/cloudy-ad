@@ -281,8 +281,8 @@ func (gm *AdGroupManager) GetGroupMembers(ctx context.Context, name string) ([]*
 	users := []*models.User{}
 	for _, user := range grp.Members {
 		usr := &models.User{
-			Username: user.Id,
-			UID:      user.DN,
+			Username: user.DN,
+			UID:      user.Id,
 		}
 		users = append(users, usr)
 	}
